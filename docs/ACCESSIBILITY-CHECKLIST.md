@@ -9,6 +9,7 @@ Use the packaged `dist\WorkflowConfigEditor.exe` with NVDA running. Do not save 
 5. Press `F6` to move through the configuration, category, settings, and value-editor panes. Focus must not disappear or jump to a different pane.
 6. In the settings search, type a short name. The result count should update. Press `Escape` after a no-match search; the full list should return.
 7. Focus a setting and press `Enter`. NVDA should announce the setting name, current value, type, pending value, and the editable control.
+   For an AGENTS.md or taste section, the type cue should say `markdown section body`, and the answer should be a multiline editor.
 8. Press `F1`, close Help, and confirm focus returns to the control that opened Help.
 9. Change the control, but do not save. NVDA should report the pending value. Press `Ctrl+R` or use `Review change`; both should open the review before saving.
 10. Press `F5` and confirm the reload prompt. The original value should return. Close the editor without saving.

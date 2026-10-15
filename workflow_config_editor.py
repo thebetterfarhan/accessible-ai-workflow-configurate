@@ -338,7 +338,8 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         name = self._setting_name(self.setting)
         self.question.SetLabel(f"Edit {name}")
         self.setting_label.SetLabel(f"Current value: {getattr(self.setting, 'value', '')}")
-        self.type_cue.SetLabel(f"Type: {getattr(self.setting, 'value_type', 'text')}")
+        value_type = str(getattr(self.setting, "value_type", "text"))
+        self.type_cue.SetLabel("Type: markdown section body" if value_type == "markdown" else f"Type: {value_type}")
         self._make_value_control(self.setting)
         self._replace_answer(self._controls[0])
         self._update_pending_label()
@@ -934,7 +935,9 @@ class ConfigEditorFrame(wx.Frame if wx else object):
             "Escape clears the setting search. Ctrl+F focuses and selects the search. "
             "F1 opens this help. F5 reloads. Ctrl+G starts guided mode. Ctrl+R reviews. Ctrl+B opens backups. Ctrl+S saves.\n\n"
             "Saving creates a backup. After saving, choose Make another change to continue, "
-            "or Undo last change to restore the previous value."
+            "or Undo last change to restore the previous value.\n\n"
+            "For shared workflow instructions, choose an AGENTS.md or taste file, choose a section, "
+            "then replace the section body in the multiline editor. Generated TASTE sections are protected."
         )
         dialog = wx.MessageDialog(self, message, "Workflow configuration help", wx.OK | wx.ICON_INFORMATION)
         try:
@@ -1036,6 +1039,12 @@ if __name__ == "__main__":
         assert any("Sandbox" in frame.category_list.GetString(i) and "(0 settings)" in frame.category_list.GetString(i) for i in range(frame.category_list.GetCount()))
         assert frame._setting_list.GetCount() == 1
         assert frame.answer_panel.GetName() == "Value editor"
+        original_setting = frame.setting
+        frame.setting = type("MarkdownSetting", (), {"label": "Shared instructions", "path": "instructions", "value": "body", "value_type": "markdown"})()
+        frame._refresh_detail()
+        assert frame.type_cue.GetLabel() == "Type: markdown section body"
+        frame.setting = original_setting
+        frame._refresh_detail()
         frame._guided_wizard = lambda: True
         frame._start_guided(None)
         assert frame.progress.GetLabel().startswith("Question 1 of 4")
