@@ -281,7 +281,13 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         elif key == wx.WXK_F6:
             self._focus_pane(event.ShiftDown())
         elif key in (wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER):
-            if source is self._setting_search and self._visible_settings:
+            if source is self.config_choice and self._guided:
+                self._set_guided_step("Question 2 of 4: Choose a category.")
+                self.category_list.SetFocus()
+            elif source is self.category_list and self._guided:
+                self._set_guided_step("Question 3 of 4: Choose a setting.")
+                self._setting_search.SetFocus()
+            elif source is self._setting_search and self._visible_settings:
                 self._setting_list.SetFocus()
             elif source is self._setting_list and self.setting is not None:
                 self._refresh_detail()
@@ -934,6 +940,12 @@ if __name__ == "__main__":
         assert frame.answer_panel.GetName() == "Value editor"
         frame._start_guided(None)
         assert frame.progress.GetLabel().startswith("Question 1 of 4")
+        config_enter = wx.KeyEvent(wx.wxEVT_CHAR_HOOK)
+        config_enter.SetKeyCode(wx.WXK_RETURN)
+        config_enter.SetEventObject(frame.config_choice)
+        frame._on_key(config_enter)
+        assert frame.progress.GetLabel().startswith("Question 2 of 4")
+        assert wx.Window.FindFocus() is frame.category_list
         assert frame.backups_button.GetLabel() == "Backups"
         assert "Current value: false" in frame._answer_control.GetName()
         assert "Type: boolean" in frame._answer_control.GetName()
