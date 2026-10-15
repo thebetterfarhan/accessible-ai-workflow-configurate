@@ -267,6 +267,8 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         if event.ControlDown() and key in (ord("F"), ord("f")):
             self._setting_search.SetFocus()
             self._setting_search.SelectAll()
+        elif event.ControlDown() and key in (ord("G"), ord("g")):
+            self._start_guided(event)
         elif event.ControlDown() and key in (ord("R"), ord("r")):
             self._on_review(event)
         elif event.ControlDown() and key in (ord("B"), ord("b")):
@@ -844,7 +846,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
             "Keyboard: Tab moves through controls. F6 moves between configuration, category, "
             "settings, and editor panes. Arrow keys choose list items. Enter selects a setting. "
             "Escape clears the setting search. Ctrl+F focuses and selects the search. "
-            "F1 opens this help. F5 reloads. Ctrl+R reviews. Ctrl+B opens backups. Ctrl+S saves.\n\n"
+            "F1 opens this help. F5 reloads. Ctrl+G starts guided mode. Ctrl+R reviews. Ctrl+B opens backups. Ctrl+S saves.\n\n"
             "Saving creates a backup. After saving, choose Make another change to continue, "
             "or Undo last change to restore the previous value."
         )
@@ -948,6 +950,16 @@ if __name__ == "__main__":
         assert frame.answer_panel.GetName() == "Value editor"
         frame._start_guided(None)
         assert frame.progress.GetLabel().startswith("Question 1 of 4")
+        guided_called = []
+        original_guided = frame._start_guided
+        frame._start_guided = lambda _event: guided_called.append(True)
+        guided_key = wx.KeyEvent(wx.wxEVT_CHAR_HOOK)
+        guided_key.SetKeyCode(ord("G"))
+        guided_key.SetEventObject(frame.config_choice)
+        guided_key.SetControlDown(True)
+        frame._on_key(guided_key)
+        assert guided_called
+        frame._start_guided = original_guided
         review_called = []
         original_review = frame._on_review
         frame._on_review = lambda _event: review_called.append(True)
