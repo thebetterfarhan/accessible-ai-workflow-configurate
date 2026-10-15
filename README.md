@@ -6,7 +6,7 @@ Run `Start-WorkflowConfigEditor.ps1`, or open `dist\WorkflowConfigEditor.exe` di
 
 The window is a five-question guided interview: choose a configuration, choose one of 19 workflow categories, choose a setting, choose or type the answer, then review the change before saving. Booleans use checkboxes; known choices use radio buttons; free-form values use a text editor. `Back`, `Next`, `Save this change`, `Make another change`, `Undo last change`, `Save`, and `Reload` are available. After saving, the backup path and sync result are announced. Undo asks for confirmation, checks that the file was not changed externally, and restores the exact backup from that save. Every save checks for an external change, writes a timestamped backup, and keeps the five newest backups. Canonical agent instructions and taste files are synchronized through the existing shared scripts after saving.
 
-For NVDA, answer one question at a time. Use arrow keys to choose an answer, `Tab` to reach Next, and `Shift+Tab` to reach Back. Press `Enter` on the answer to continue. The final question presents the checkbox, radio buttons, or text value.
+For NVDA, answer one question at a time. Use arrow keys to choose an answer, `Tab` to reach Next, and `Shift+Tab` to reach Back. Press `Enter` on the answer to continue. The final question presents the checkbox, radio buttons, or text value. Press `F1` or activate `Help (F1)` whenever you get stuck; focus returns to the Help button when the instructions close.
 
 Build or refresh the executable:
 

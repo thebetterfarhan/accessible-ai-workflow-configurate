@@ -63,6 +63,10 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         instructions.SetName("Keyboard instructions")
         instructions.Wrap(940)
         outer.Add(instructions, 0, wx.ALL | wx.EXPAND, 8)
+        self.help_button = wx.Button(panel, label="Help (F1)")
+        self.help_button.SetName("Help")
+        self.help_button.SetToolTip("Read keyboard and wizard instructions")
+        outer.Add(self.help_button, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
         self.progress = wx.StaticText(panel, label="Question 1 of 5")
         self.progress.SetName("Wizard progress")
         outer.Add(self.progress, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
@@ -117,6 +121,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         self.another_button.Bind(wx.EVT_BUTTON, self._on_another_change)
         self.undo_button.Bind(wx.EVT_BUTTON, self._on_undo)
         self.reload_button.Bind(wx.EVT_BUTTON, self._on_reload)
+        self.help_button.Bind(wx.EVT_BUTTON, self._on_help)
         self.Bind(wx.EVT_CLOSE, self._on_close)
         self.step = 0
         self._answer_control = None
@@ -129,6 +134,8 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         key = event.GetKeyCode()
         if event.ControlDown() and key in (ord("S"), ord("s")):
             self._on_save(event)
+        elif key == wx.WXK_F1:
+            self._on_help(event)
         elif key in (wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER) and event.GetEventObject() is self._answer_control:
             self._on_next(event)
         elif key == wx.WXK_F5:
@@ -572,6 +579,26 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         if self.file is None or not self._confirm_discard():
             return
         self._load_file(self.files.index(self.file))
+
+    def _on_help(self, _event: Any) -> None:
+        """Show short, screen-reader-friendly instructions without changing the wizard."""
+        message = (
+            "Workflow configuration help\n\n"
+            "This wizard asks one question at a time. Choose a configuration, "
+            "an area, a setting, and its new value. Then review the change before saving.\n\n"
+            "Keyboard: Tab moves forward. Shift+Tab moves back. Arrow keys choose a radio "
+            "button. Enter activates the focused choice. F1 opens this help. F5 reloads. "
+            "Control plus S opens the review or saves after review.\n\n"
+            "Saving creates a backup. After saving, choose Make another change to continue, "
+            "or Undo last change to restore the previous value."
+        )
+        dialog = wx.MessageDialog(self, message, "Workflow configuration help", wx.OK | wx.ICON_INFORMATION)
+        try:
+            dialog.ShowModal()
+        finally:
+            dialog.Destroy()
+        if self.help_button and self.help_button.IsEnabled():
+            self.help_button.SetFocus()
 
     def _on_close(self, event: Any) -> None:
         if self._confirm_discard():
