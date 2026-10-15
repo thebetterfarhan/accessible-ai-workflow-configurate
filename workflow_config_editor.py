@@ -247,7 +247,10 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         self._draft_value = None
         self._populate_setting_choices()
         self._refresh_detail()
-        self._set_guided_step(f"Category {self._guided_category_pos + 1} of {len(self._guided_categories)}. Question 1 of 4: Choose a category.")
+        self._set_guided_step(
+            f"Category {self._guided_category_pos + 1} of {len(self._guided_categories)}. "
+            f"Question 1 of 4: Choose a category. {self._category_guidance(category)}"
+        )
         self.category_list.SetFocus()
 
     def _on_guided_next(self, _event: Any) -> None:
@@ -309,6 +312,42 @@ class ConfigEditorFrame(wx.Frame if wx else object):
 
     def _category_has_settings(self, category: str) -> bool:
         return any(self._setting_category(setting) == category for setting in self.settings)
+
+    def _category_guidance(self, category: str) -> str:
+        guidance = {
+            "Model": "This controls which AI model answers you.",
+            "Reasoning": "This controls how much time the model spends thinking.",
+            "Sandbox": "This controls computer access, from read-only to full access.",
+            "Approval": "This controls when the workflow must ask before acting.",
+            "Permissions": "This controls which actions the workflow is allowed to take.",
+            "Hooks": "This controls automation that runs around workflow actions.",
+            "Agents": "This controls instructions for specialized workflow agents.",
+            "Instructions": "This controls shared instructions used across workflow tools.",
+            "Tools": "This controls which tools the workflow can use.",
+            "MCP": "This controls connected MCP services.",
+            "Plugins": "This controls optional workflow extensions.",
+            "Providers": "This controls service provider settings.",
+            "Routing": "This controls where workflow requests are sent.",
+            "Performance": "This controls speed and resource use.",
+            "Output": "This controls response format and detail.",
+            "Accessibility": "This controls screen-reader and keyboard behavior.",
+            "Updates": "This controls update checks and update behavior.",
+            "Workspace": "This controls project workspace behavior.",
+            "Other": "This contains settings that do not fit another category.",
+        }
+        return guidance.get(category, f"This contains {category.lower()} workflow settings.")
+
+    def _value_guidance(self, setting: Any) -> str:
+        raw = str(getattr(setting, "value", ""))
+        options = self._enum_options(setting, raw)
+        if options:
+            return "Possible choices: " + "; ".join(self._radio_label(option) for option in options) + "."
+        value_type = str(getattr(setting, "value_type", "text")).lower()
+        if value_type in ("bool", "boolean") or raw.lower() in ("true", "false"):
+            return "Choose checked for yes, or unchecked for no."
+        if value_type == "markdown":
+            return "Replace the section body in the multiline editor."
+        return "Enter the value this workflow should use."
 
     def _set_guided_step(self, text: str) -> None:
         self.progress.SetLabel(text)
@@ -377,7 +416,10 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         self.question.SetLabel(f"Edit {name}")
         self.setting_label.SetLabel(f"Current value: {getattr(self.setting, 'value', '')}")
         value_type = str(getattr(self.setting, "value_type", "text"))
-        self.type_cue.SetLabel("Type: markdown section body" if value_type == "markdown" else f"Type: {value_type}")
+        cue = "Type: markdown section body" if value_type == "markdown" else f"Type: {value_type}"
+        if self._guided:
+            cue = f"{cue}. {self._value_guidance(self.setting)}"
+        self.type_cue.SetLabel(cue)
         self._make_value_control(self.setting)
         self._replace_answer(self._controls[0])
         self._update_pending_label()
@@ -1102,6 +1144,8 @@ if __name__ == "__main__":
         assert any("Sandbox" in frame.category_list.GetString(i) and "(0 settings)" in frame.category_list.GetString(i) for i in range(frame.category_list.GetCount()))
         declared_category = type("DeclaredCategorySetting", (), {"label": "custom", "path": "custom", "category": "Security"})()
         assert frame._setting_category(declared_category) == "Security"
+        assert "computer access" in frame._category_guidance("Sandbox")
+        assert "Read only" in frame._value_guidance(type("SandboxSetting", (), {"label": "Sandbox", "value": "read-only", "value_type": "text"})())
         assert frame._setting_list.GetCount() == 1
         assert frame.answer_panel.GetName() == "Value editor"
         original_setting = frame.setting
