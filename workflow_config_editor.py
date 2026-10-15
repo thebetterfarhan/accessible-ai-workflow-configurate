@@ -267,6 +267,8 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         if event.ControlDown() and key in (ord("F"), ord("f")):
             self._setting_search.SetFocus()
             self._setting_search.SelectAll()
+        elif event.ControlDown() and key in (ord("R"), ord("r")):
+            self._on_review(event)
         elif event.ControlDown() and key in (ord("S"), ord("s")):
             self._on_save(event)
         elif key == wx.WXK_F1:
@@ -838,7 +840,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
             "Keyboard: Tab moves through controls. F6 moves between configuration, category, "
             "settings, and editor panes. Arrow keys choose list items. Enter selects a setting. "
             "Escape clears the setting search. Ctrl+F focuses and selects the search. "
-            "F1 opens this help. F5 reloads. Ctrl+S saves.\n\n"
+            "F1 opens this help. F5 reloads. Ctrl+R reviews. Ctrl+S saves.\n\n"
             "Saving creates a backup. After saving, choose Make another change to continue, "
             "or Undo last change to restore the previous value."
         )
@@ -940,6 +942,16 @@ if __name__ == "__main__":
         assert frame.answer_panel.GetName() == "Value editor"
         frame._start_guided(None)
         assert frame.progress.GetLabel().startswith("Question 1 of 4")
+        review_called = []
+        original_review = frame._on_review
+        frame._on_review = lambda _event: review_called.append(True)
+        review_key = wx.KeyEvent(wx.wxEVT_CHAR_HOOK)
+        review_key.SetKeyCode(ord("R"))
+        review_key.SetEventObject(frame.config_choice)
+        review_key.SetControlDown(True)
+        frame._on_key(review_key)
+        assert review_called
+        frame._on_review = original_review
         config_enter = wx.KeyEvent(wx.wxEVT_CHAR_HOOK)
         config_enter.SetKeyCode(wx.WXK_RETURN)
         config_enter.SetEventObject(frame.config_choice)
