@@ -481,12 +481,12 @@ class ConfigEditorFrame(wx.Frame if wx else object):
                     "count": len(settings),
                 })
             except Exception as exc:
-                self._inventory_counts[item] = (0, type(exc).__name__)
+                self._inventory_counts[item] = (0, str(exc)[:160] or type(exc).__name__)
                 rows.append({
                     "name": self._file_name(item),
                     "kind": str(getattr(item, "kind", "")),
                     "count": 0,
-                    "error": type(exc).__name__,
+                    "error": str(exc)[:160] or type(exc).__name__,
                 })
         return rows
 

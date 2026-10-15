@@ -98,7 +98,11 @@ def load_settings(file: ConfigFile):
     return settings, _sha(raw)
 
 def _jsonc_load(p):
-    node = subprocess.run([_node(), str(Path(__file__).with_name("jsonc_bridge.cjs")), "list", str(p)], capture_output=True, text=True, check=True)
+    try:
+        node = subprocess.run([_node(), str(Path(__file__).with_name("jsonc_bridge.cjs")), "list", str(p)], capture_output=True, text=True, check=True)
+    except subprocess.CalledProcessError as exc:
+        detail = (exc.stderr or "JSONC parser failed").strip()
+        raise ValueError(detail) from exc
     return [Setting(tuple(x["path"]), x["label"], x["value"], x["value_type"]) for x in json.loads(node.stdout)]
 
 def _markdown_load(p, kind):

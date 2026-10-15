@@ -1,4 +1,4 @@
-import json, tempfile, os, subprocess
+import json, tempfile, os
 from pathlib import Path
 import config_backend as b
 
@@ -108,8 +108,8 @@ def test_malformed_jsonc_is_rejected(tmp_path):
     try:
         b.load_settings(b.ConfigFile('broken', p, 'jsonc'))
         assert False
-    except subprocess.CalledProcessError:
-        pass
+    except ValueError as exc:
+        assert 'invalid JSONC' in str(exc)
 
 def test_jsonc_utf8_bom_is_supported(tmp_path):
     p = tmp_path / 'bom.jsonc'; p.write_text('\ufeff{"enabled": true}\n', encoding='utf8')
