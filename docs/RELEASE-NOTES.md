@@ -19,10 +19,7 @@
 - NVDA walkthrough passed for the renamed app, guided help, source inventory, and setting explanations.
 - Local ZIP includes `THIRD-PARTY-NOTICES.md` and both bundled license texts.
 
-## Current local artifacts
-
-- EXE SHA-256: `ED012052AE41504DC70280760615D792483B81B383E238B303B5D7A5ED23320B`
-- ZIP SHA-256: `54BD0635799ADE465E8B777B4A47FFA60AEE73199E85A3D64B91470DFE37C763`
+Artifact hashes are recorded in [`RELEASE-SIGNOFF.md`](RELEASE-SIGNOFF.md), which stays with the repository evidence and is not embedded in the ZIP.
 
 ## Boundary
 
