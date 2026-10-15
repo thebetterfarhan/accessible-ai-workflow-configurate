@@ -22,3 +22,5 @@ python -m PyInstaller --noconfirm --clean workflow_config_editor.spec
 ```
 
 The bundled executable includes the Node runtime and JSONC parser needed for format-preserving JSONC edits.
+
+Markdown instruction files are edited by section: choose a heading such as `Working style`, then replace the section body in the multiline editor. Generated `TASTE:` sections remain protected.

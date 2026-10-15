@@ -104,10 +104,13 @@ def _jsonc_load(p):
 
 def _markdown_load(p, kind):
     text=p.read_text(encoding="utf-8"); out=[]
-    for m in re.finditer(r"(?m)^##?\s+(.+?)\s*$", text):
+    headings = list(re.finditer(r"(?m)^#{1,2}\s+(.+?)\s*$", text))
+    for index, m in enumerate(headings):
         name=m.group(1).strip()
         if kind=="agents" and name.startswith("TASTE:"): continue
-        out.append(Setting((name,), name, name, "section"))
+        end = headings[index + 1].start() if index + 1 < len(headings) else len(text)
+        body = text[m.end():end].strip()
+        out.append(Setting((name,), name, body, "markdown"))
     return out
 
 def _backup(p):
@@ -175,7 +178,16 @@ def restore_backup(file: ConfigFile, backup_path: Path | str, expected_sha256: s
 
 def _markdown_save(text, setting, value, kind):
     if kind=="agents" and setting.path[0].startswith("TASTE:"): raise ValueError("generated TASTE block is not editable")
-    return text.replace(setting.path[0], value, 1)
+    name = re.escape(setting.path[0])
+    match = re.search(rf"(?m)^#{{1,2}}[ \t]+{name}[ \t]*(?:\r?$)", text)
+    if not match:
+        raise ValueError(f"section not found: {setting.path[0]}")
+    next_heading = re.search(r"(?m)^#{1,2}\s+", text[match.end():])
+    body_start = match.end()
+    body_end = body_start + next_heading.start() if next_heading else len(text)
+    body = str(value).strip()
+    replacement = ("\n\n" + body + "\n\n") if body else "\n\n"
+    return text[:body_start] + replacement + text[body_end:]
 
 def _sync(kind):
     if not kind: return ""

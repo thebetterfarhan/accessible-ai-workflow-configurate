@@ -37,6 +37,19 @@ def test_plain_json_uses_jsonc_editor(tmp_path):
     b.save_setting(f,settings[0],'true',h)
     assert json.loads(p.read_text())['enabled'] is True
 
+def test_markdown_settings_edit_section_body(tmp_path):
+    p = tmp_path / 'AGENTS.md'
+    p.write_text('# Rules\n\nUse the keyboard.\n\n## Other\nKeep backups.\n', encoding='utf8')
+    f = b.ConfigFile('AGENTS.md', p, 'markdown', 'agents')
+    settings, digest = b.load_settings(f)
+    rules = next(setting for setting in settings if setting.label == 'Rules')
+    assert rules.value == 'Use the keyboard.'
+    b.save_setting(f, rules, 'Use the keyboard and a screen reader.', digest)
+    text = p.read_text(encoding='utf8')
+    assert '# Rules' in text
+    assert 'Use the keyboard and a screen reader.' in text
+    assert '## Other' in text
+
 def test_restore_backup_checks_hash_and_keeps_current_backup(tmp_path):
     p = tmp_path / 'x.json'; p.write_text('{"enabled": false}\n', encoding='utf8')
     f = b.ConfigFile('x', p, 'json')

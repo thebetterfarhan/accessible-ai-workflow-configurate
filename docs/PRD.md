@@ -55,6 +55,8 @@ The guided entry point opens a keyboard-friendly four-question wizard for config
 - CommandCode JSON settings.
 - Canonical AGENTS.md and taste source files, with synchronization hooks.
 
+Markdown instruction files expose editable section bodies; generated TASTE sections remain protected.
+
 Credentials, auth files, runtime history, state, and caches are excluded. Backup files may be listed read-only for recovery and are never edited as settings.
 
 ## Safety and recovery
