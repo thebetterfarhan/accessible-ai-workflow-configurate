@@ -147,6 +147,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         self.step = 0
         self._answer_control = None
         self._radio_values: list[str] = []
+        self._draft_value: Optional[str] = None
 
     def _bind_keys(self) -> None:
         self.Bind(wx.EVT_CHAR_HOOK, self._on_key)
@@ -188,15 +189,19 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         try:
             self.settings, self.file_hash = self.backend.load_settings(item)
             self.file, self.setting, self.dirty = item, None, False
+            self._draft_value = None
             self._derive_categories()
             self._set_status("Loaded")
         except Exception as exc:
             self._set_status(f"Could not load file: {exc}")
 
     def _replace_answer(self, control: Any) -> None:
+        keep_controls = control in self._controls
         for child in self.answer_panel.GetChildren():
             if child is not control:
                 child.Destroy()
+        if not keep_controls:
+            self._controls = []
         self.answer_sizer.Clear(delete_windows=False)
         self._answer_control = control
         self.answer_sizer.Add(control, 0, wx.EXPAND | wx.ALL, 4)
@@ -286,6 +291,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
 
     def _set_category(self, index: int) -> None:
         self.category = self.categories[index]
+        self._draft_value = None
 
     def _derive_categories(self) -> None:
         """Keep only categories represented by this file and show their counts."""
@@ -303,7 +309,10 @@ class ConfigEditorFrame(wx.Frame if wx else object):
 
     def _choose_setting(self, index: int) -> None:
         if self._visible_settings:
-            self.setting = self._visible_settings[index]
+            selected = self._visible_settings[index]
+            if selected is not self.setting:
+                self._draft_value = None
+            self.setting = selected
 
     def _populate_setting_choices(self) -> None:
         """Apply the question-3 search without losing the selected setting."""
@@ -314,9 +323,11 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         if self.setting in candidates:
             self._setting_list.SetSelection(candidates.index(self.setting))
         elif candidates:
+            self._draft_value = None
             self.setting = candidates[0]
             self._setting_list.SetSelection(0)
         else:
+            self._draft_value = None
             self.setting = None
         self._update_setting_step_state()
 
@@ -367,6 +378,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
                 if self._controls:
                     self._controls[0].SetFocus()
                 return
+            self._draft_value = self._typed_value()
         if self.step == 4:
             self._on_save(_event)
             return
@@ -522,7 +534,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         for control in self._controls:
             control.Destroy()
         self._controls = []
-        raw = str(getattr(setting, "value", ""))
+        raw = self._draft_value if self._draft_value is not None else str(getattr(setting, "value", ""))
         value_type = str(getattr(setting, "value_type", "text")).lower()
         label = self._setting_name(setting)
         if value_type in ("bool", "boolean") or raw.lower() in ("true", "false"):
@@ -616,6 +628,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
             result = self.backend.save_setting(self.file, self.setting, self._typed_value(), self.file_hash)
             self.file_hash = getattr(result, "sha256", None) or self._hash_after_save(result)
             self.dirty = False
+            self._draft_value = None
             backup = getattr(result, "backup_path", None)
             self._last_backup = backup
             self._load_file(self.files.index(self.file))
@@ -676,6 +689,8 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         if self.file is None or not self._confirm_discard():
             return
         self._load_file(self.files.index(self.file))
+        self._show_step(0)
+        self._set_status("Reloaded. Choose a configuration.")
 
     def _on_help(self, _event: Any) -> None:
         """Show short, screen-reader-friendly instructions without changing the wizard."""
@@ -759,12 +774,22 @@ if __name__ == "__main__":
         frame._on_key(event)
         assert frame.step == 3
         assert isinstance(frame._answer_control, wx.CheckBox)
+        frame._answer_control.SetValue(True)
+        frame._on_typed_value(None)
+        frame._on_next(None)
+        assert frame.step == 4
+        frame._on_back(None)
+        assert frame.step == 3
+        assert frame._answer_control.GetValue()
         children = frame.answer_panel.GetChildren()
         assert len(children) == 1
         assert children[0].GetName() == frame._answer_control.GetName()
         frame._show_step(4)
         assert frame.progress.GetLabel() == "Question 5 of 5"
         assert frame.next_button.GetLabel() == "Save this change"
+        frame.dirty = False
+        frame._on_reload(None)
+        assert frame.step == 0
         frame.Destroy()
         app.Destroy()
         raise SystemExit(0)
