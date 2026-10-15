@@ -248,6 +248,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
     def _refresh_detail(self) -> None:
         if self.setting is None:
             self.review_button.Enable(False)
+            self.save_button.Enable(False)
             self.question.SetLabel("Select a setting")
             self.setting_label.SetLabel("")
             self.type_cue.SetLabel("")
@@ -256,6 +257,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
             self._answer_control = None
             return
         self.review_button.Enable(True)
+        self.save_button.Enable(True)
         name = self._setting_name(self.setting)
         self.question.SetLabel(f"Edit {name}")
         self.setting_label.SetLabel(f"Current value: {getattr(self.setting, 'value', '')}")
@@ -1027,6 +1029,7 @@ if __name__ == "__main__":
         frame._on_setting_search(None)
         assert not frame._setting_list.IsEnabled()
         assert not frame.review_button.IsEnabled()
+        assert not frame.save_button.IsEnabled()
         assert frame.question.GetLabel() == "Select a setting"
         escape = wx.KeyEvent(wx.wxEVT_CHAR_HOOK)
         escape.SetKeyCode(wx.WXK_ESCAPE)
@@ -1035,6 +1038,7 @@ if __name__ == "__main__":
         assert frame._setting_search.GetValue() == ""
         assert frame._setting_list.IsEnabled()
         assert frame.review_button.IsEnabled()
+        assert frame.save_button.IsEnabled()
         assert isinstance(frame._answer_control, wx.CheckBox)
         assert frame.pending_label.GetLabel() == "Pending value: false"
         frame._answer_control.SetValue(True)
