@@ -33,7 +33,7 @@ Codex, OpenCode, and CommandCode keep workflow behavior in different TOML, JSON,
 5. Review the current and pending values while editing.
 6. Explicitly save, undo the last save, or start another change.
 
-The guided entry point opens a keyboard-friendly four-question wizard for configuration, category, setting, and value, then returns focus to the persistent editor's value control.
+The guided entry point opens a keyboard-friendly category-by-category wizard. It adapts to the loaded configuration's categories, uses Back/Next/Skip navigation, and asks the minimum required questions: category, setting, value, and final check. Each saved category advances to the next one without losing the previous answer.
 
 ## Accessibility requirements
 

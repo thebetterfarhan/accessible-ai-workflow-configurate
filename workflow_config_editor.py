@@ -81,7 +81,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
     def _build_ui(self) -> None:
         panel = wx.Panel(self)
         outer = wx.BoxSizer(wx.VERTICAL)
-        instructions = wx.StaticText(panel, label="New here? Activate Start guided change, then press Enter for each question. You can also choose a configuration, category, and setting directly. F6 moves between panes.")
+        instructions = wx.StaticText(panel, label="New here? Activate Start guided change for a category-by-category guide. Use Back and Next to answer each question. You can also edit directly. F6 moves between panes.")
         instructions.SetName("Keyboard instructions")
         instructions.Wrap(940)
         outer.Add(instructions, 0, wx.ALL | wx.EXPAND, 8)
@@ -91,7 +91,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         outer.Add(self.help_button, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
         self.guided_button = wx.Button(panel, label="Start guided change")
         self.guided_button.SetName("Start guided change")
-        self.guided_button.SetToolTip("Ask four simple questions to make one workflow change")
+        self.guided_button.SetToolTip("Guide you through each category with Back and Next")
         outer.Add(self.guided_button, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
         self.progress = wx.StaticText(panel, label="Ready")
         self.progress.SetName("Guided progress")
@@ -180,6 +180,14 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         buttons.Add(self.backups_button, 0, wx.RIGHT, 6)
         buttons.Add(self.reload_button, 0)
         outer.Add(buttons, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
+        guided_buttons = wx.BoxSizer(wx.HORIZONTAL)
+        self.guided_back_button = wx.Button(panel, label="Back")
+        self.guided_next_button = wx.Button(panel, label="Next")
+        self.guided_skip_button = wx.Button(panel, label="Skip category")
+        for button in (self.guided_back_button, self.guided_next_button, self.guided_skip_button):
+            button.Hide()
+            guided_buttons.Add(button, 0, wx.RIGHT, 6)
+        outer.Add(guided_buttons, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
         self.status = wx.StaticText(panel, label="Ready")
         self.status.SetName("Status")
         self.status.SetForegroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_WINDOWTEXT))
@@ -194,97 +202,120 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         self.reload_button.Bind(wx.EVT_BUTTON, self._on_reload)
         self.help_button.Bind(wx.EVT_BUTTON, self._on_help)
         self.guided_button.Bind(wx.EVT_BUTTON, self._start_guided)
+        self.guided_back_button.Bind(wx.EVT_BUTTON, self._on_guided_back)
+        self.guided_next_button.Bind(wx.EVT_BUTTON, self._on_guided_next)
+        self.guided_skip_button.Bind(wx.EVT_BUTTON, self._on_guided_skip)
         self.Bind(wx.EVT_CLOSE, self._on_close)
         self.step = 3
         self._answer_control = None
         self._radio_values: list[str] = []
         self._draft_value: Optional[str] = None
         self._guided = False
+        self._guided_phase: Optional[str] = None
+        self._guided_categories: list[str] = []
+        self._guided_category_pos = 0
 
     def _bind_keys(self) -> None:
         self.Bind(wx.EVT_CHAR_HOOK, self._on_key)
 
     def _start_guided(self, _event: Any) -> None:
-        self._guided = True
-        self.progress.Show()
-        self.Layout()
-        self._set_guided_step("Question 1 of 4: Choose a configuration.")
-        if not self._guided_wizard():
-            self._guided = False
-            self.progress.Hide()
-            self.Layout()
-
-    def _guided_wizard(self) -> bool:
-        """Ask the setup questions in keyboard-friendly dialogs."""
         if not self.files:
             self._set_status("No configurations are available. Choose Reload (F5) first.")
-            return False
+            return
+        self._guided = True
+        self._guided_phase = "category"
+        self._guided_categories = [category for category in self.categories[1:] if self._category_has_settings(category)]
+        self._guided_category_pos = 0
+        if not self._guided_categories:
+            self._guided = False
+            self._guided_phase = None
+            self._set_status("No editable categories are available in this configuration.")
+            return
+        self.progress.Show()
+        for button in (self.guided_back_button, self.guided_next_button, self.guided_skip_button):
+            button.Show()
+        self.guided_back_button.Enable(False)
+        self.Layout()
+        self._show_guided_category()
 
-        def choose(title: str, prompt: str, choices: list[str]) -> Optional[int]:
-            dialog = wx.SingleChoiceDialog(self, prompt, title, choices)
-            try:
-                return dialog.GetSelection() if dialog.ShowModal() == wx.ID_OK else None
-            finally:
-                dialog.Destroy()
-
-        file_index = choose(
-            "Question 1 of 4: Configuration",
-            "Which configuration should I edit?",
-            [self._file_name(item) for item in self.files],
-        )
-        if file_index is None:
-            self._set_status("Guided setup cancelled.")
-            return False
-        self._load_file(file_index)
-        self._refresh_lists()
-
-        populated = [
-            (index, label)
-            for index, label in enumerate(self.category_labels[1:], start=1)
-            if self._category_has_settings(self.categories[index])
-        ]
-        category_choice = choose(
-            "Question 2 of 4: Category",
-            "Which category should I change?",
-            [label for _, label in populated],
-        )
-        if category_choice is None:
-            self._set_status("Guided setup cancelled.")
-            return False
-        category_index = populated[category_choice][0]
-        self.category_list.SetSelection(category_index)
-        self.category = self.categories[category_index]
+    def _show_guided_category(self) -> None:
+        category = self._guided_categories[self._guided_category_pos]
+        index = self.categories.index(category)
+        self.category_list.SetSelection(index)
+        self.category = category
         self.setting = None
+        self._draft_value = None
         self._populate_setting_choices()
         self._refresh_detail()
+        self._set_guided_step(f"Category {self._guided_category_pos + 1} of {len(self._guided_categories)}. Question 1 of 4: Choose a category.")
+        self.category_list.SetFocus()
 
-        setting_choice = choose(
-            "Question 3 of 4: Setting",
-            "Which setting should I change?",
-            [self._setting_name(setting) for setting in self._visible_settings],
-        )
-        if setting_choice is None:
-            self._set_status("Guided setup cancelled.")
-            return False
-        self._choose_setting(setting_choice)
-        self._refresh_detail()
-        self._set_guided_step("Question 4 of 4: Choose or enter the value.")
-        if self._answer_control is not None:
-            self._answer_control.SetFocus()
-        return True
+    def _on_guided_next(self, _event: Any) -> None:
+        if not self._guided:
+            return
+        if self._guided_phase == "category":
+            self._guided_phase = "setting"
+            self._set_guided_step(f"Category {self._guided_category_pos + 1} of {len(self._guided_categories)}. Question 2 of 4: Choose a setting.")
+            self._setting_list.SetFocus()
+        elif self._guided_phase == "setting":
+            if self.setting is None:
+                self._set_status("Choose a setting before continuing.")
+                self._setting_list.SetFocus()
+                return
+            self._guided_phase = "value"
+            self._set_guided_step(f"Category {self._guided_category_pos + 1} of {len(self._guided_categories)}. Question 3 of 4: Choose or enter the value.")
+            if self._answer_control is not None:
+                self._answer_control.SetFocus()
+        elif self._guided_phase == "value":
+            self._guided_phase = "review"
+            self._set_guided_step(f"Category {self._guided_category_pos + 1} of {len(self._guided_categories)}. Question 4 of 4: Check this change.")
+            self.review_button.SetFocus()
+        elif self._guided_phase == "review":
+            self._on_review(None)
+
+    def _on_guided_back(self, _event: Any) -> None:
+        if not self._guided:
+            return
+        if self._guided_phase == "setting":
+            self._guided_phase = "category"
+            self._show_guided_category()
+        elif self._guided_phase == "value":
+            self._guided_phase = "setting"
+            self._set_guided_step(f"Category {self._guided_category_pos + 1} of {len(self._guided_categories)}. Question 2 of 4: Choose a setting.")
+            self._setting_list.SetFocus()
+        elif self._guided_phase == "review":
+            self._guided_phase = "value"
+            self._set_guided_step(f"Category {self._guided_category_pos + 1} of {len(self._guided_categories)}. Question 3 of 4: Choose or enter the value.")
+            if self._answer_control is not None:
+                self._answer_control.SetFocus()
+
+    def _on_guided_skip(self, _event: Any) -> None:
+        if self._guided:
+            self._finish_guided_category()
+
+    def _finish_guided_category(self) -> None:
+        if self._guided_category_pos + 1 < len(self._guided_categories):
+            self._guided_category_pos += 1
+            self._guided_phase = "category"
+            self._show_guided_category()
+            return
+        self._guided = False
+        self._guided_phase = None
+        self.progress.SetLabel("Guided setup complete. Review or save your change.")
+        self._set_status("Guided setup complete. Review or save your change.")
+        for button in (self.guided_back_button, self.guided_next_button, self.guided_skip_button):
+            button.Hide()
+        self.Layout()
 
     def _category_has_settings(self, category: str) -> bool:
         return any(self._setting_category(setting) == category for setting in self.settings)
 
     def _set_guided_step(self, text: str) -> None:
         self.progress.SetLabel(text)
-        questions = {
-            "Question 1 of 4": "Question 1 of 4: Which configuration should I edit?",
-            "Question 2 of 4": "Question 2 of 4: Which category should I change?",
-            "Question 3 of 4": "Question 3 of 4: Which setting should I change?",
-            "Question 4 of 4": "Question 4 of 4: What value should I use?",
-        }
-        self.question.SetLabel(next((label for prefix, label in questions.items() if text.startswith(prefix)), text))
+        self.question.SetLabel(text)
+        self.guided_back_button.Enable(self._guided_category_pos > 0 or self._guided_phase not in (None, "category"))
+        self.guided_next_button.SetLabel("Next category" if self._guided_phase == "review" else "Next")
+        self.guided_skip_button.Enable(self._guided_phase in ("category", "setting", "value", "review"))
         self._set_status(text)
 
     def _on_config_choice(self, event: Any) -> None:
@@ -292,7 +323,10 @@ class ConfigEditorFrame(wx.Frame if wx else object):
             self._load_file(event.GetSelection())
             self._refresh_lists()
             if self._guided:
-                self._set_guided_step("Question 2 of 4: Choose a category.")
+                self._guided_categories = [category for category in self.categories[1:] if self._category_has_settings(category)]
+                self._guided_category_pos = 0
+                self._guided_phase = "category"
+                self._show_guided_category()
         elif self.file in self.files:
             self.config_choice.SetSelection(self.files.index(self.file))
 
@@ -310,7 +344,11 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         self._refresh_detail()
         self._set_status(f"{self.category_labels[event.GetSelection()]}. Choose a setting.")
         if self._guided:
-            self._set_guided_step("Question 3 of 4: Choose a setting.")
+            self._set_guided_step(
+                f"Category {self._guided_category_pos + 1} of {len(self._guided_categories)}. "
+                f"Question {'1' if self._guided_phase == 'category' else '2'} of 4: "
+                f"{'Choose a category.' if self._guided_phase == 'category' else 'Choose a setting.'}"
+            )
 
     def _refresh_lists(self) -> None:
         self.config_choice.Set([self._file_name(item) for item in self.files])
@@ -371,11 +409,17 @@ class ConfigEditorFrame(wx.Frame if wx else object):
             self._focus_pane(event.ShiftDown())
         elif key in (wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER):
             if source is self.config_choice and self._guided:
-                self._set_guided_step("Question 2 of 4: Choose a category.")
+                self._guided_phase = "category"
+                self._set_guided_step(f"Category {self._guided_category_pos + 1} of {len(self._guided_categories)}. Question 1 of 4: Choose a category.")
                 self.category_list.SetFocus()
             elif source is self.category_list and self._guided:
-                self._set_guided_step("Question 3 of 4: Choose a setting.")
-                self._setting_search.SetFocus()
+                self._guided_phase = "setting"
+                self._set_guided_step(f"Category {self._guided_category_pos + 1} of {len(self._guided_categories)}. Question 2 of 4: Choose a setting.")
+                self._setting_list.SetFocus()
+            elif source is self._setting_list and self._guided and self.setting is not None:
+                self._guided_phase = "value"
+                self._set_guided_step(f"Category {self._guided_category_pos + 1} of {len(self._guided_categories)}. Question 3 of 4: Choose or enter the value.")
+                self._answer_control.SetFocus()
             elif source is self._setting_search and self._visible_settings:
                 self._setting_list.SetFocus()
             elif source is self._setting_list and self.setting is not None:
@@ -437,6 +481,8 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         self.review_button.Enable(False)
         self.guided_button.Enable(False)
         self.progress.Hide()
+        for button in (self.guided_back_button, self.guided_next_button, self.guided_skip_button):
+            button.Hide()
         self.another_button.Enable(False)
         self.undo_button.Enable(False)
         self.backups_button.Enable(False)
@@ -480,8 +526,11 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         """Keep only categories represented by this file and show their counts."""
         counts = {category: 0 for category in self._category_order[1:]}
         for setting in self.settings:
-            counts[self._setting_category(setting)] += 1
+            category = self._setting_category(setting)
+            counts.setdefault(category, 0)
+            counts[category] += 1
         available = list(self._category_order[1:])
+        available.extend(category for category in counts if category not in available)
         self.categories = ["All categories", *available]
         self.category_labels = [f"All settings ({len(self.settings)})"] + [
             f"{category}: {self._category_descriptions.get(category, 'choose settings')} ({counts[category]} settings)"
@@ -497,8 +546,8 @@ class ConfigEditorFrame(wx.Frame if wx else object):
                 self._draft_value = None
             self.setting = selected
             self._set_status(f"{self._setting_name(selected)} selected. Press Enter to edit.")
-            if self._guided:
-                self._set_guided_step("Question 4 of 4: Choose or enter the value.")
+            if self._guided and self._guided_phase in ("setting", "value"):
+                self._set_guided_step(f"Category {self._guided_category_pos + 1} of {len(self._guided_categories)}. Question 2 of 4: Choose a setting.")
 
     def _populate_setting_choices(self) -> None:
         """Apply the question-3 search without losing the selected setting."""
@@ -592,6 +641,9 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         return [s for s in self.settings if self.category == "All categories" or self._setting_category(s) == self.category]
 
     def _setting_category(self, setting: Any) -> str:
+        declared = str(getattr(setting, "category", "")).strip()
+        if declared:
+            return declared
         text = " ".join(map(str, [getattr(setting, "label", ""), getattr(setting, "path", "")])).lower()
         aliases = {
             "model": "Model", "reason": "Reasoning", "sandbox": "Sandbox", "approval": "Approval",
@@ -800,15 +852,25 @@ class ConfigEditorFrame(wx.Frame if wx else object):
             proposed = self._draft_value if self._draft_value is not None else self._typed_value()
             result = self.backend.save_setting(self.file, self.setting, proposed, self.file_hash)
             self.file_hash = getattr(result, "sha256", None) or self._hash_after_save(result)
+            continue_guided = self._guided and self._guided_phase == "review" and self._guided_category_pos + 1 < len(self._guided_categories)
             self.dirty = False
             self._draft_value = None
-            self._guided = False
-            self.progress.Hide()
+            if continue_guided:
+                self._guided_category_pos += 1
+                self._guided_phase = "category"
+            else:
+                self._guided = False
+                self._guided_phase = None
+                self.progress.Hide()
+                for button in (self.guided_back_button, self.guided_next_button, self.guided_skip_button):
+                    button.Hide()
             self.Layout()
             backup = getattr(result, "backup_path", None)
             self._last_backup = backup
             self._load_file(self.files.index(self.file))
             self._refresh_lists()
+            if continue_guided:
+                self._show_guided_category()
             backup_text = f" Backup: {backup}." if backup else ""
             sync_text = str(getattr(result, "sync_message", "")).strip()
             self._set_status(f"Saved.{backup_text} {sync_text}".strip())
@@ -929,7 +991,8 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         message = (
             "Workflow configuration help\n\n"
             "Choose a configuration, category, and setting. The editor stays visible while "
-            "you change the value. Choose Save change when ready.\n\n"
+            "you change the value. Guided change walks through populated categories with Back, Next, "
+            "and Skip category. Choose Save change when ready.\n\n"
             "Keyboard: Tab moves through controls. F6 moves between configuration, category, "
             "settings, and editor panes. Arrow keys choose list items. Enter selects a setting. "
             "Escape clears the setting search. Ctrl+F focuses and selects the search. "
@@ -1037,6 +1100,8 @@ if __name__ == "__main__":
         frame._refresh_lists()
         assert frame.category_list.GetCount() == 20
         assert any("Sandbox" in frame.category_list.GetString(i) and "(0 settings)" in frame.category_list.GetString(i) for i in range(frame.category_list.GetCount()))
+        declared_category = type("DeclaredCategorySetting", (), {"label": "custom", "path": "custom", "category": "Security"})()
+        assert frame._setting_category(declared_category) == "Security"
         assert frame._setting_list.GetCount() == 1
         assert frame.answer_panel.GetName() == "Value editor"
         original_setting = frame.setting
@@ -1045,11 +1110,19 @@ if __name__ == "__main__":
         assert frame.type_cue.GetLabel() == "Type: markdown section body"
         frame.setting = original_setting
         frame._refresh_detail()
-        frame._guided_wizard = lambda: True
+        assert frame.guided_next_button.GetLabel() == "Next"
+        assert frame.guided_back_button.GetLabel() == "Back"
+        assert frame.guided_skip_button.GetLabel() == "Skip category"
         frame._start_guided(None)
-        assert frame.progress.GetLabel().startswith("Question 1 of 4")
-        assert frame.question.GetLabel().startswith("Question 1 of 4")
+        assert frame._guided_phase == "category"
+        assert frame.progress.GetLabel().startswith("Category 1 of")
         assert frame.progress.IsShown()
+        frame._on_guided_next(None)
+        assert frame._guided_phase == "setting"
+        frame._on_guided_next(None)
+        assert frame._guided_phase == "value"
+        frame._on_guided_back(None)
+        assert frame._guided_phase == "setting"
         guided_called = []
         original_guided = frame._start_guided
         frame._start_guided = lambda _event: guided_called.append(True)
@@ -1084,16 +1157,15 @@ if __name__ == "__main__":
         config_enter.SetKeyCode(wx.WXK_RETURN)
         config_enter.SetEventObject(frame.config_choice)
         frame._on_key(config_enter)
-        assert frame.progress.GetLabel().startswith("Question 2 of 4")
-        assert frame.question.GetLabel().startswith("Question 2 of 4")
+        assert frame.progress.GetLabel().startswith("Category 1 of")
+        assert "Question 1 of 4" in frame.question.GetLabel()
         assert wx.Window.FindFocus() is frame.category_list
         category_enter = wx.KeyEvent(wx.wxEVT_CHAR_HOOK)
         category_enter.SetKeyCode(wx.WXK_RETURN)
         category_enter.SetEventObject(frame.category_list)
         frame._on_key(category_enter)
-        assert frame.progress.GetLabel().startswith("Question 3 of 4")
-        assert frame.question.GetLabel().startswith("Question 3 of 4")
-        assert wx.Window.FindFocus() is frame._setting_search
+        assert "Question 2 of 4" in frame.progress.GetLabel()
+        assert wx.Window.FindFocus() is frame._setting_list
         search_enter = wx.KeyEvent(wx.wxEVT_CHAR_HOOK)
         search_enter.SetKeyCode(wx.WXK_RETURN)
         search_enter.SetEventObject(frame._setting_search)
@@ -1108,7 +1180,10 @@ if __name__ == "__main__":
         frame._restore_help_focus()
         assert wx.Window.FindFocus() is frame._setting_search
         frame._choose_setting(0)
-        assert frame.progress.GetLabel().startswith("Question 4 of 4")
+        frame._on_guided_next(None)
+        assert "Question 3 of 4" in frame.progress.GetLabel()
+        frame._on_guided_next(None)
+        assert "Question 4 of 4" in frame.progress.GetLabel()
         review = frame._review_text()
         assert "Current value: false" in review
         assert "Pending value: false" in review
