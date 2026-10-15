@@ -357,7 +357,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
                 self.undo_button.Enable(False)
             self.backups_button.Enable(callable(getattr(self.backend, "list_backups", None)))
             self._derive_categories()
-            self._set_status("Loaded")
+            self._set_status(f"Loaded {self._file_name(item)}")
         except Exception as exc:
             self._set_status(f"Could not load file: {exc}")
 
@@ -926,6 +926,9 @@ if __name__ == "__main__":
         assert frame.guided_button.GetLabel() == "Start guided change"
         assert frame.status.GetLabel().startswith("Choose a configuration")
         assert frame.config_choice.GetSelection() == 0
+        frame._load_file(0)
+        assert frame.status.GetLabel().startswith("Loaded Smoke configuration")
+        frame._refresh_lists()
         assert frame.category_list.GetCount() == 2
         assert frame._setting_list.GetCount() == 1
         assert frame.answer_panel.GetName() == "Value editor"
