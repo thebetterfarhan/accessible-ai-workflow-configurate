@@ -93,6 +93,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         outer.Add(self.progress, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
         panes = wx.BoxSizer(wx.HORIZONTAL)
         left = wx.Panel(panel)
+        left.SetName("Configuration and categories")
         left_sizer = wx.BoxSizer(wx.VERTICAL)
         config_label = wx.StaticText(left, label="Configuration")
         self.config_choice = wx.ComboBox(left, style=wx.CB_READONLY)
@@ -108,6 +109,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         left_sizer.Add(self.category_list, 1, wx.EXPAND)
         left.SetSizer(left_sizer)
         middle = wx.Panel(panel)
+        middle.SetName("Settings list")
         middle_sizer = wx.BoxSizer(wx.VERTICAL)
         middle_sizer.Add(wx.StaticText(middle, label="Settings"), 0, wx.BOTTOM, 3)
         self._setting_search = wx.TextCtrl(middle)
@@ -125,6 +127,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         middle_sizer.Add(self._setting_empty_message, 0, wx.EXPAND | wx.TOP, 8)
         middle.SetSizer(middle_sizer)
         right = wx.Panel(panel)
+        right.SetName("Setting editor")
         editor = wx.BoxSizer(wx.VERTICAL)
         self.question = wx.StaticText(right, label="Select a setting")
         self.question.SetName("Setting question")
@@ -140,6 +143,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         self.pending_label.SetName("Pending value")
         editor.Add(self.pending_label, 0, wx.BOTTOM, 8)
         self.answer_panel = wx.Panel(right)
+        self.answer_panel.SetName("Value editor")
         self.answer_sizer = wx.BoxSizer(wx.VERTICAL)
         self.answer_panel.SetSizer(self.answer_sizer)
         editor.Add(self.answer_panel, 1, wx.EXPAND)
@@ -760,6 +764,7 @@ if __name__ == "__main__":
         assert frame.config_choice.GetSelection() == 0
         assert frame.category_list.GetCount() == 2
         assert frame._setting_list.GetCount() == 1
+        assert frame.answer_panel.GetName() == "Value editor"
         assert frame.save_button.GetLabel().startswith("Save change")
         assert frame.reload_button.GetLabel().startswith("Reload")
         assert frame.undo_button.GetLabel() == "Undo last change"
