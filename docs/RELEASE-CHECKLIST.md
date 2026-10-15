@@ -93,6 +93,8 @@ Record these before sharing:
 - known limitations
 - exact folder or channel where the local artifact was shared
 
+Copy the completed record to [`docs/RELEASE-SIGNOFF.md`](RELEASE-SIGNOFF.md) before asking for a release decision.
+
 If any item is unknown, the candidate is not release-ready.
 
 ## Release boundary

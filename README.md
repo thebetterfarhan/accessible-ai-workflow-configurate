@@ -32,6 +32,8 @@ The repeatable spoken-output check is in [`docs/ACCESSIBILITY-CHECKLIST.md`](doc
 
 The reproducible local release gate is in [`docs/RELEASE-CHECKLIST.md`](docs/RELEASE-CHECKLIST.md). It records automated checks, the NVDA gate, and the boundary between local release evidence and publishing.
 
+The current evidence handoff is in [`docs/RELEASE-SIGNOFF.md`](docs/RELEASE-SIGNOFF.md).
+
 Current local release notes are in [`docs/RELEASE-NOTES.md`](docs/RELEASE-NOTES.md).
 
 Change history is in [`CHANGELOG.md`](CHANGELOG.md).
