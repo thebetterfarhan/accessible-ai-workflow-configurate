@@ -45,6 +45,8 @@ The change summary shows old and new values, while category reset discards only 
 
 Safe presets are preview-only until the existing review/save action is confirmed. Recent changes and health checks are read-only views.
 
+The `All sources` read-only view lists every supported source found for the current user and totals their editable settings. The configuration selector remains the editing entry point for one source at a time, and the inventory explains that authentication, runtime, history, and cache files are excluded.
+
 ## Accessibility requirements
 
 - Keyboard-only operation.
@@ -92,6 +94,7 @@ Credentials, auth files, runtime history, state, and caches are excluded. Backup
 - Guided mode provides orientation, category progress, pause/resume, validation before Next, explanations, summaries, presets, recent changes, and health checks.
 - Presets never write without an explicit review and save confirmation.
 - Health and recent-change views are read-only.
+- All sources lists the discovered supported sources and the total editable setting count without exposing raw values.
 - A fixture save preserves comments and rejects an external hash change.
 - A fixture undo restores the exact prior bytes and keeps a recovery backup.
 - Review-before-save shows the target, current value, and pending value before writing.

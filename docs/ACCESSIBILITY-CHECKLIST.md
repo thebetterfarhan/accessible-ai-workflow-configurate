@@ -20,5 +20,6 @@ Use the packaged `dist\WorkflowConfigEditor.exe` with NVDA running. Do not save 
 14. Change the control, but do not save. NVDA should report the pending value. Press `Ctrl+R` or use `Review change`; both should open the review before saving.
 15. Press `F5` and confirm the reload prompt. The original value should return. Close the editor without saving.
 16. Press `Ctrl+B` or choose `Backups`, select a backup with the keyboard, cancel once, then reopen it and confirm restore. The current file should be backed up before restoration.
+17. Activate `All sources`. NVDA should read the total editable setting count and each supported source. Return focus should be the `All sources` button after closing the read-only dialog.
 
 Record any failure with the key pressed, the last spoken label, and whether focus stayed in the expected pane. Automated smoke tests and accessibility trees do not replace this spoken-output check.

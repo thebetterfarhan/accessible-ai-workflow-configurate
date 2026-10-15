@@ -178,6 +178,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         self.presets_button = wx.Button(panel, label="Presets")
         self.recent_button = wx.Button(panel, label="Recent changes")
         self.health_button = wx.Button(panel, label="Health check")
+        self.inventory_button = wx.Button(panel, label="All sources")
         self.save_button = wx.Button(panel, label="Save change (Ctrl+S)")
         self.another_button = wx.Button(panel, label="Make another change")
         self.another_button.Enable(False)
@@ -191,6 +192,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         buttons.Add(self.presets_button, 0, wx.RIGHT, 6)
         buttons.Add(self.recent_button, 0, wx.RIGHT, 6)
         buttons.Add(self.health_button, 0, wx.RIGHT, 6)
+        buttons.Add(self.inventory_button, 0, wx.RIGHT, 6)
         buttons.Add(self.save_button, 0, wx.RIGHT, 6)
         buttons.Add(self.another_button, 0, wx.RIGHT, 6)
         buttons.Add(self.undo_button, 0, wx.RIGHT, 6)
@@ -218,6 +220,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         self.presets_button.Bind(wx.EVT_BUTTON, self._on_presets)
         self.recent_button.Bind(wx.EVT_BUTTON, self._show_recent_changes)
         self.health_button.Bind(wx.EVT_BUTTON, self._show_health)
+        self.inventory_button.Bind(wx.EVT_BUTTON, self._show_inventory)
         self.save_button.Bind(wx.EVT_BUTTON, self._on_save)
         self.another_button.Bind(wx.EVT_BUTTON, self._on_another_change)
         self.undo_button.Bind(wx.EVT_BUTTON, self._on_undo)
@@ -435,6 +438,49 @@ class ConfigEditorFrame(wx.Frame if wx else object):
     def _show_health(self, _event: Any) -> None:
         lines = [f"{severity}: {message}" for severity, message in self._health_report()]
         dialog = wx.MessageDialog(self, "Configuration health\n\n" + "\n".join(lines), "Health check", wx.OK | wx.ICON_INFORMATION)
+        try:
+            dialog.ShowModal()
+        finally:
+            dialog.Destroy()
+        self._restore_help_focus()
+
+    def _inventory_rows(self) -> list[dict[str, Any]]:
+        rows: list[dict[str, Any]] = []
+        for item in self.files:
+            try:
+                settings = self.settings if item is self.file else self.backend.load_settings(item)[0]
+                rows.append({
+                    "name": self._file_name(item),
+                    "kind": str(getattr(item, "kind", "")),
+                    "count": len(settings),
+                })
+            except Exception as exc:
+                rows.append({
+                    "name": self._file_name(item),
+                    "kind": str(getattr(item, "kind", "")),
+                    "count": 0,
+                    "error": type(exc).__name__,
+                })
+        return rows
+
+    def _inventory_text(self) -> str:
+        rows = self._inventory_rows()
+        total = sum(int(row["count"]) for row in rows)
+        lines = [
+            "All supported workflow sources",
+            f"Total editable settings: {total}",
+            "",
+            "Choose a source in Configuration to edit its settings.",
+            "",
+        ]
+        for row in rows:
+            suffix = f" — {row['error']} while reading" if row.get("error") else f" — {row['count']} editable settings"
+            lines.append(f"{row['name']}{suffix}")
+        lines.extend(["", "Authentication, runtime state, history, and cache files are excluded for safety."])
+        return "\n".join(lines)
+
+    def _show_inventory(self, _event: Any) -> None:
+        dialog = wx.MessageDialog(self, self._inventory_text(), "All sources", wx.OK | wx.ICON_INFORMATION)
         try:
             dialog.ShowModal()
         finally:
@@ -1441,6 +1487,9 @@ if __name__ == "__main__":
         assert frame._preset_choices() == ["Beginner", "Balanced", "Advanced"]
         assert frame.recent_button.GetLabel() == "Recent changes"
         assert frame.health_button.GetLabel() == "Health check"
+        assert frame.inventory_button.GetLabel() == "All sources"
+        assert frame._inventory_rows()[0]["count"] == 1
+        assert "Total editable settings: 1" in frame._inventory_text()
         assert "Guided changes" in frame._change_summary_text()
         assert frame.welcome_button.GetLabel() == "Welcome"
         assert frame.guidance_button.GetLabel() == "Guidance: Detailed"
