@@ -9,6 +9,7 @@ from __future__ import annotations
 import hashlib
 import importlib
 import argparse
+import json
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -301,10 +302,48 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         if self.step == 2 and self.setting is None:
             self._set_status("Choose a setting first")
             return
+        if self.step == 3:
+            error = self._value_error()
+            if error:
+                self._set_status(error)
+                if self._controls:
+                    self._controls[0].SetFocus()
+                return
         if self.step == 4:
             self._on_save(_event)
             return
         self._show_step(self.step + 1)
+
+    def _value_error(self) -> Optional[str]:
+        """Return a spoken correction, or None when the answer is usable."""
+        if self.setting is None or not self._controls:
+            return "Choose a setting and enter a value first."
+        value_type = str(getattr(self.setting, "value_type", "text")).lower().strip()
+        value = self._typed_value().strip()
+        if value_type in ("bool", "boolean"):
+            return None
+        if value_type in ("number", "numeric", "float", "double"):
+            try:
+                number = float(value)
+                if not number == number or number in (float("inf"), float("-inf")):
+                    raise ValueError
+            except (TypeError, ValueError):
+                return "That answer must be a number. Enter a number, then press Review change."
+        elif value_type in ("integer", "int"):
+            try:
+                int(value)
+            except (TypeError, ValueError):
+                return "That answer must be a whole number. Enter digits, then press Review change."
+        elif value_type in ("array", "list", "object", "map", "json"):
+            try:
+                parsed = json.loads(value)
+            except (TypeError, ValueError, json.JSONDecodeError):
+                return f"That answer must be valid JSON for a {value_type}. Enter it again, then press Review change."
+            if value_type in ("array", "list") and not isinstance(parsed, list):
+                return "That answer must be a JSON list in square brackets. Enter it again, then press Review change."
+            if value_type in ("object", "map") and not isinstance(parsed, dict):
+                return "That answer must be a JSON object in curly brackets. Enter it again, then press Review change."
+        return None
 
     def _confirm_discard(self) -> bool:
         if not self.dirty:
