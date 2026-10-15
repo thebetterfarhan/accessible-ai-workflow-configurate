@@ -173,6 +173,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         buttons = wx.BoxSizer(wx.HORIZONTAL)
         self.review_button = wx.Button(panel, label="Review change")
         self.review_button.Enable(False)
+        self.summary_button = wx.Button(panel, label="Change summary")
         self.save_button = wx.Button(panel, label="Save change (Ctrl+S)")
         self.another_button = wx.Button(panel, label="Make another change")
         self.another_button.Enable(False)
@@ -182,6 +183,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         self.backups_button.Enable(False)
         self.reload_button = wx.Button(panel, label="Reload (F5)")
         buttons.Add(self.review_button, 0, wx.RIGHT, 6)
+        buttons.Add(self.summary_button, 0, wx.RIGHT, 6)
         buttons.Add(self.save_button, 0, wx.RIGHT, 6)
         buttons.Add(self.another_button, 0, wx.RIGHT, 6)
         buttons.Add(self.undo_button, 0, wx.RIGHT, 6)
@@ -193,7 +195,8 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         self.guided_next_button = wx.Button(panel, label="Next")
         self.guided_skip_button = wx.Button(panel, label="Skip category")
         self.guided_pause_button = wx.Button(panel, label="Pause guided setup")
-        for button in (self.guided_back_button, self.guided_next_button, self.guided_skip_button, self.guided_pause_button):
+        self.reset_category_button = wx.Button(panel, label="Reset category")
+        for button in (self.guided_back_button, self.guided_next_button, self.guided_skip_button, self.guided_pause_button, self.reset_category_button):
             button.Hide()
             guided_buttons.Add(button, 0, wx.RIGHT, 6)
         outer.Add(guided_buttons, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
@@ -204,6 +207,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         panel.SetSizer(outer)
 
         self.review_button.Bind(wx.EVT_BUTTON, self._on_review)
+        self.summary_button.Bind(wx.EVT_BUTTON, self._show_change_summary)
         self.save_button.Bind(wx.EVT_BUTTON, self._on_save)
         self.another_button.Bind(wx.EVT_BUTTON, self._on_another_change)
         self.undo_button.Bind(wx.EVT_BUTTON, self._on_undo)
@@ -217,6 +221,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         self.guided_next_button.Bind(wx.EVT_BUTTON, self._on_guided_next)
         self.guided_skip_button.Bind(wx.EVT_BUTTON, self._on_guided_skip)
         self.guided_pause_button.Bind(wx.EVT_BUTTON, self._pause_guided)
+        self.reset_category_button.Bind(wx.EVT_BUTTON, self._reset_category)
         self.Bind(wx.EVT_CLOSE, self._on_close)
         self.step = 3
         self._answer_control = None
@@ -226,6 +231,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         self.guidance_level = "detailed"
         self._guided_completed: set[str] = set()
         self._guided_resume: Optional[dict[str, Any]] = None
+        self._guided_changes: list[dict[str, str]] = []
         self._guided_phase: Optional[str] = None
         self._guided_categories: list[str] = []
         self._guided_category_pos = 0
@@ -254,7 +260,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
             return
         self.progress.Show()
         self.guided_button.SetLabel("Resume guided setup" if self._guided_resume else "Start guided change")
-        for button in (self.guided_back_button, self.guided_next_button, self.guided_skip_button, self.guided_pause_button):
+        for button in (self.guided_back_button, self.guided_next_button, self.guided_skip_button, self.guided_pause_button, self.reset_category_button):
             button.Show()
         self.guided_back_button.Enable(False)
         self.Layout()
@@ -292,12 +298,58 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         self._guided_resume = self._guided_resume_state()
         self._guided = False
         self.progress.Hide()
-        for button in (self.guided_back_button, self.guided_next_button, self.guided_skip_button, self.guided_pause_button):
+        for button in (self.guided_back_button, self.guided_next_button, self.guided_skip_button, self.guided_pause_button, self.reset_category_button):
             button.Hide()
         self.guided_button.SetLabel("Resume guided setup")
         self._refresh_guided_checklist()
         self.Layout()
         self._set_status("Guided setup paused. Choose Resume guided setup to continue.")
+
+    def _change_summary_text(self) -> str:
+        rows = list(self._guided_changes)
+        if self.setting is not None and self._controls:
+            rows.append({
+                "category": self.category,
+                "setting": self._setting_name(self.setting),
+                "old": str(getattr(self.setting, "value", "")),
+                "new": self._typed_value(),
+            })
+        if not rows:
+            return "No guided changes are pending or saved in this session."
+        return "Guided changes:\n" + "\n".join(
+            f"{row['category']}: {row['setting']} — {row['old']} to {row['new']}"
+            for row in rows
+        )
+
+    def _reset_category(self, _event: Any) -> None:
+        if self.setting is None or not self._controls:
+            self._set_status("There is no pending category answer to reset.")
+            return
+        dialog = wx.MessageDialog(
+            self,
+            "Reset the current category answer to its loaded value? This does not write to disk.",
+            "Reset category",
+            wx.YES_NO | wx.ICON_WARNING,
+        )
+        try:
+            confirmed = dialog.ShowModal() == wx.ID_YES
+        finally:
+            dialog.Destroy()
+        if not confirmed:
+            self._set_status("Reset cancelled. The pending answer is still active.")
+            return
+        self._draft_value = None
+        self.dirty = False
+        self._refresh_detail()
+        self._set_status("Category answer reset to the loaded value.")
+
+    def _show_change_summary(self, _event: Any) -> None:
+        dialog = wx.MessageDialog(self, self._change_summary_text(), "Guided change summary", wx.OK | wx.ICON_INFORMATION)
+        try:
+            dialog.ShowModal()
+        finally:
+            dialog.Destroy()
+        self._restore_help_focus()
 
     def _show_guided_category(self) -> None:
         category = self._guided_categories[self._guided_category_pos]
@@ -374,7 +426,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         self._guided_phase = None
         self.progress.SetLabel("Guided setup complete. Review or save your change.")
         self._set_status("Guided setup complete. Review or save your change.")
-        for button in (self.guided_back_button, self.guided_next_button, self.guided_skip_button, self.guided_pause_button):
+        for button in (self.guided_back_button, self.guided_next_button, self.guided_skip_button, self.guided_pause_button, self.reset_category_button):
             button.Hide()
         self.Layout()
 
@@ -609,7 +661,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         self.review_button.Enable(False)
         self.guided_button.Enable(False)
         self.progress.Hide()
-        for button in (self.guided_back_button, self.guided_next_button, self.guided_skip_button, self.guided_pause_button):
+        for button in (self.guided_back_button, self.guided_next_button, self.guided_skip_button, self.guided_pause_button, self.reset_category_button):
             button.Hide()
         self.another_button.Enable(False)
         self.undo_button.Enable(False)
@@ -941,6 +993,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
             f"Setting: {self._setting_name(self.setting)}\n"
             f"Current value: {getattr(self.setting, 'value', '')}\n"
             f"Pending value: {self._typed_value()}\n\n"
+            f"{self._change_summary_text()}\n\n"
             "Choose Yes to save this change, or No to keep editing."
         )
 
@@ -978,11 +1031,18 @@ class ConfigEditorFrame(wx.Frame if wx else object):
                     self._controls[0].SetFocus()
                 return
             proposed = self._draft_value if self._draft_value is not None else self._typed_value()
+            change_record = {
+                "category": self.category,
+                "setting": self._setting_name(self.setting),
+                "old": str(getattr(self.setting, "value", "")),
+                "new": str(proposed),
+            }
             result = self.backend.save_setting(self.file, self.setting, proposed, self.file_hash)
             self.file_hash = getattr(result, "sha256", None) or self._hash_after_save(result)
             continue_guided = self._guided and self._guided_phase == "review" and self._guided_category_pos + 1 < len(self._guided_categories)
             if self._guided and self._guided_phase == "review":
                 self._guided_completed.add(self._guided_categories[self._guided_category_pos])
+            self._guided_changes.append(change_record)
             self.dirty = False
             self._draft_value = None
             if continue_guided:
@@ -994,7 +1054,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
                 self._guided_resume = None
                 self.guided_button.SetLabel("Start guided change")
                 self.progress.Hide()
-                for button in (self.guided_back_button, self.guided_next_button, self.guided_skip_button, self.guided_pause_button):
+                for button in (self.guided_back_button, self.guided_next_button, self.guided_skip_button, self.guided_pause_button, self.reset_category_button):
                     button.Hide()
             self.Layout()
             backup = getattr(result, "backup_path", None)
@@ -1275,6 +1335,8 @@ if __name__ == "__main__":
         assert frame.guided_next_button.GetLabel() == "Next"
         assert frame.guided_back_button.GetLabel() == "Back"
         assert frame.guided_skip_button.GetLabel() == "Skip category"
+        assert frame.reset_category_button.GetLabel() == "Reset category"
+        assert "Guided changes" in frame._change_summary_text()
         assert frame.welcome_button.GetLabel() == "Welcome"
         assert frame.guidance_button.GetLabel() == "Guidance: Detailed"
         frame._set_guidance_level("short")

@@ -41,6 +41,8 @@ Guided setup exposes a category checklist and can pause and resume within the cu
 
 Guided Next validates the current answer before advancing and provides a type-specific example for free-form values.
 
+The change summary shows old and new values, while category reset discards only the current pending answer after confirmation.
+
 ## Accessibility requirements
 
 - Keyboard-only operation.
