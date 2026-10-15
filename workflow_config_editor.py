@@ -333,6 +333,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
             self.files = list(self.backend.discover_files())
             if self.files:
                 self.save_button.Enable(True)
+                self.guided_button.Enable(True)
                 self._load_file(0)
                 self._refresh_lists()
                 self.config_choice.SetFocus()
@@ -346,6 +347,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         """Keep an empty discovery state actionable through Reload only."""
         self.question.SetLabel(message)
         self.save_button.Enable(False)
+        self.guided_button.Enable(False)
         self.another_button.Enable(False)
         self.undo_button.Enable(False)
         self.backups_button.Enable(False)
@@ -921,10 +923,12 @@ if __name__ == "__main__":
         empty_backend = _EmptySmokeBackend()
         empty_frame = ConfigEditorFrame(empty_backend)
         assert not empty_frame.save_button.IsEnabled()
+        assert not empty_frame.guided_button.IsEnabled()
         assert empty_frame.reload_button.IsEnabled()
         empty_backend.available = True
         empty_frame._on_reload(None)
         assert empty_frame.save_button.IsEnabled()
+        assert empty_frame.guided_button.IsEnabled()
         empty_frame.Destroy()
         frame = ConfigEditorFrame(_SmokeBackend())
         frame.Show()
