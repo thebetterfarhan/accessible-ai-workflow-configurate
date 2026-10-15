@@ -163,11 +163,14 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         self.another_button.Enable(False)
         self.undo_button = wx.Button(panel, label="Undo last change")
         self.undo_button.Enable(False)
+        self.backups_button = wx.Button(panel, label="Backups")
+        self.backups_button.Enable(False)
         self.reload_button = wx.Button(panel, label="Reload (F5)")
         buttons.Add(self.review_button, 0, wx.RIGHT, 6)
         buttons.Add(self.save_button, 0, wx.RIGHT, 6)
         buttons.Add(self.another_button, 0, wx.RIGHT, 6)
         buttons.Add(self.undo_button, 0, wx.RIGHT, 6)
+        buttons.Add(self.backups_button, 0, wx.RIGHT, 6)
         buttons.Add(self.reload_button, 0)
         outer.Add(buttons, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
         self.status = wx.StaticText(panel, label="Ready")
@@ -180,6 +183,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         self.save_button.Bind(wx.EVT_BUTTON, self._on_save)
         self.another_button.Bind(wx.EVT_BUTTON, self._on_another_change)
         self.undo_button.Bind(wx.EVT_BUTTON, self._on_undo)
+        self.backups_button.Bind(wx.EVT_BUTTON, self._on_backups)
         self.reload_button.Bind(wx.EVT_BUTTON, self._on_reload)
         self.help_button.Bind(wx.EVT_BUTTON, self._on_help)
         self.Bind(wx.EVT_CLOSE, self._on_close)
@@ -318,6 +322,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         self.save_button.Enable(False)
         self.another_button.Enable(False)
         self.undo_button.Enable(False)
+        self.backups_button.Enable(False)
         self.reload_button.Enable(True)
         self._set_status(f"{message}. Choose Reload (F5) to try again.")
         self.reload_button.SetFocus()
@@ -332,6 +337,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
             if file_changed:
                 self._last_backup = None
                 self.undo_button.Enable(False)
+            self.backups_button.Enable(callable(getattr(self.backend, "list_backups", None)))
             self._derive_categories()
             self._set_status("Loaded")
         except Exception as exc:
@@ -733,6 +739,53 @@ class ConfigEditorFrame(wx.Frame if wx else object):
             self._set_status(f"Could not undo last change: {exc}")
             self.undo_button.SetFocus()
 
+    def _on_backups(self, _event: Any) -> None:
+        if self.file is None:
+            self._set_status("Load a configuration first")
+            return
+        list_backups = getattr(self.backend, "list_backups", None)
+        if not callable(list_backups):
+            self._set_status("Backup history is unavailable for this configuration")
+            return
+        backups = list_backups(self.file)
+        if not backups:
+            self._set_status("No backups are available for this configuration")
+            return
+        choices = [path.name for path in backups]
+        dialog = wx.SingleChoiceDialog(self, "Choose a backup to restore.", "Backup history", choices)
+        try:
+            if dialog.ShowModal() != wx.ID_OK:
+                self._set_status("Backup restore cancelled.")
+                return
+            backup = backups[dialog.GetSelection()]
+        finally:
+            dialog.Destroy()
+        confirm = wx.MessageDialog(
+            self,
+            f"Restore {backup.name}? The current file will be backed up first.",
+            "Restore backup",
+            wx.YES_NO | wx.ICON_WARNING,
+        )
+        try:
+            confirmed = confirm.ShowModal() == wx.ID_YES
+        finally:
+            confirm.Destroy()
+        if not confirmed:
+            self._set_status("Backup restore cancelled.")
+            self.backups_button.SetFocus()
+            return
+        try:
+            result = self.backend.restore_backup(self.file, backup, self.file_hash)
+            self._last_backup = getattr(result, "backup_path", None)
+            self._load_file(self.files.index(self.file))
+            self._refresh_lists()
+            self.undo_button.Enable(self._last_backup is not None)
+            self._set_status(f"Restored backup {backup.name}.")
+            self.another_button.SetFocus()
+        except Exception as exc:
+            self._set_status(f"Could not restore backup: {exc}")
+            self.backups_button.SetFocus()
+
     def _hash_after_save(self, result: Any) -> Optional[str]:
         # Backend may omit a post-save hash; reload supplies the authoritative one.
         return None
@@ -853,6 +906,7 @@ if __name__ == "__main__":
         assert frame.category_list.GetCount() == 2
         assert frame._setting_list.GetCount() == 1
         assert frame.answer_panel.GetName() == "Value editor"
+        assert frame.backups_button.GetLabel() == "Backups"
         assert "Current value: false" in frame._answer_control.GetName()
         assert "Type: boolean" in frame._answer_control.GetName()
         assert "Pending value: false" in frame._answer_control.GetName()
