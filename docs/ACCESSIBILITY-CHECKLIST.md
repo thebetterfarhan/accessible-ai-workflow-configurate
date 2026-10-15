@@ -12,6 +12,6 @@ Use the packaged `dist\WorkflowConfigEditor.exe` with NVDA running. Do not save 
 8. Press `F1`, close Help, and confirm focus returns to the control that opened Help.
 9. Change the control, but do not save. NVDA should report the pending value. Press `Ctrl+R` or use `Review change`; both should open the review before saving.
 10. Press `F5` and confirm the reload prompt. The original value should return. Close the editor without saving.
-11. Choose `Backups`, select a backup with the keyboard, cancel once, then reopen it and confirm restore. The current file should be backed up before restoration.
+11. Press `Ctrl+B` or choose `Backups`, select a backup with the keyboard, cancel once, then reopen it and confirm restore. The current file should be backed up before restoration.
 
 Record any failure with the key pressed, the last spoken label, and whether focus stayed in the expected pane. Automated smoke tests and accessibility trees do not replace this spoken-output check.

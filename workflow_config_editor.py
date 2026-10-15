@@ -269,6 +269,8 @@ class ConfigEditorFrame(wx.Frame if wx else object):
             self._setting_search.SelectAll()
         elif event.ControlDown() and key in (ord("R"), ord("r")):
             self._on_review(event)
+        elif event.ControlDown() and key in (ord("B"), ord("b")):
+            self._on_backups(event)
         elif event.ControlDown() and key in (ord("S"), ord("s")):
             self._on_save(event)
         elif key == wx.WXK_F1:
@@ -842,7 +844,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
             "Keyboard: Tab moves through controls. F6 moves between configuration, category, "
             "settings, and editor panes. Arrow keys choose list items. Enter selects a setting. "
             "Escape clears the setting search. Ctrl+F focuses and selects the search. "
-            "F1 opens this help. F5 reloads. Ctrl+R reviews. Ctrl+S saves.\n\n"
+            "F1 opens this help. F5 reloads. Ctrl+R reviews. Ctrl+B opens backups. Ctrl+S saves.\n\n"
             "Saving creates a backup. After saving, choose Make another change to continue, "
             "or Undo last change to restore the previous value."
         )
@@ -956,6 +958,16 @@ if __name__ == "__main__":
         frame._on_key(review_key)
         assert review_called
         frame._on_review = original_review
+        backups_called = []
+        original_backups = frame._on_backups
+        frame._on_backups = lambda _event: backups_called.append(True)
+        backups_key = wx.KeyEvent(wx.wxEVT_CHAR_HOOK)
+        backups_key.SetKeyCode(ord("B"))
+        backups_key.SetEventObject(frame.config_choice)
+        backups_key.SetControlDown(True)
+        frame._on_key(backups_key)
+        assert backups_called
+        frame._on_backups = original_backups
         config_enter = wx.KeyEvent(wx.wxEVT_CHAR_HOOK)
         config_enter.SetKeyCode(wx.WXK_RETURN)
         config_enter.SetEventObject(frame.config_choice)
