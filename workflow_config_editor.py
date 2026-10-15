@@ -91,6 +91,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         outer.Add(self.help_button, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
         self.guided_button = wx.Button(panel, label="Start guided change")
         self.guided_button.SetName("Start guided change")
+        self.guided_button.SetToolTip("Ask four simple questions to make one workflow change")
         outer.Add(self.guided_button, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
         self.progress = wx.StaticText(panel, label="Ready")
         self.progress.SetName("Guided progress")
@@ -212,6 +213,13 @@ class ConfigEditorFrame(wx.Frame if wx else object):
 
     def _set_guided_step(self, text: str) -> None:
         self.progress.SetLabel(text)
+        questions = {
+            "Question 1 of 4": "Question 1 of 4: Which configuration should I edit?",
+            "Question 2 of 4": "Question 2 of 4: Which category should I change?",
+            "Question 3 of 4": "Question 3 of 4: Which setting should I change?",
+            "Question 4 of 4": "Question 4 of 4: What value should I use?",
+        }
+        self.question.SetLabel(next((label for prefix, label in questions.items() if text.startswith(prefix)), text))
         self._set_status(text)
 
     def _on_config_choice(self, event: Any) -> None:
@@ -964,6 +972,7 @@ if __name__ == "__main__":
         assert frame.answer_panel.GetName() == "Value editor"
         frame._start_guided(None)
         assert frame.progress.GetLabel().startswith("Question 1 of 4")
+        assert frame.question.GetLabel().startswith("Question 1 of 4")
         assert frame.progress.IsShown()
         guided_called = []
         original_guided = frame._start_guided
@@ -1000,7 +1009,20 @@ if __name__ == "__main__":
         config_enter.SetEventObject(frame.config_choice)
         frame._on_key(config_enter)
         assert frame.progress.GetLabel().startswith("Question 2 of 4")
+        assert frame.question.GetLabel().startswith("Question 2 of 4")
         assert wx.Window.FindFocus() is frame.category_list
+        category_enter = wx.KeyEvent(wx.wxEVT_CHAR_HOOK)
+        category_enter.SetKeyCode(wx.WXK_RETURN)
+        category_enter.SetEventObject(frame.category_list)
+        frame._on_key(category_enter)
+        assert frame.progress.GetLabel().startswith("Question 3 of 4")
+        assert frame.question.GetLabel().startswith("Question 3 of 4")
+        assert wx.Window.FindFocus() is frame._setting_search
+        search_enter = wx.KeyEvent(wx.wxEVT_CHAR_HOOK)
+        search_enter.SetKeyCode(wx.WXK_RETURN)
+        search_enter.SetEventObject(frame._setting_search)
+        frame._on_key(search_enter)
+        assert wx.Window.FindFocus() is frame._setting_list
         assert frame.backups_button.GetLabel() == "Backups"
         assert "Current value: false" in frame._answer_control.GetName()
         assert "Type: boolean" in frame._answer_control.GetName()
