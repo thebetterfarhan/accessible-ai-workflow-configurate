@@ -431,12 +431,6 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         finally:
             dialog.Destroy()
 
-    def _on_file(self, event: Any) -> None:
-        if not self._confirm_discard():
-            self.file_list.SetSelection(self.files.index(self.file) if self.file in self.files else wx.NOT_FOUND)
-            return
-        self._load_file(event.GetSelection())
-
     def _filtered(self) -> list[Any]:
         return [s for s in self.settings if self.category == "All categories" or self._setting_category(s) == self.category]
 
@@ -502,40 +496,6 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         if "taste" in key:
             return "Workflow preferences"
         return raw
-
-    def _refresh_settings(self) -> None:
-        focused = wx.Window.FindFocus()
-        visible = self._filtered()
-        self.setting_list.Set([self._setting_name(s) for s in visible])
-        self._visible_settings = visible
-        if visible:
-            self.setting_list.SetSelection(0)
-            self._show_setting(visible[0])
-        else:
-            self.setting = None
-            self.setting_label.SetLabel("No matching setting")
-        if focused and focused.IsEnabled() and focused.GetParent() is not None:
-            focused.SetFocus()
-
-    def _on_search(self, _event: Any) -> None:
-        self._refresh_settings()
-
-    def _on_category(self, event: Any) -> None:
-        self.category = self.categories[event.GetSelection()]
-        self._refresh_settings()
-
-    def _on_setting(self, event: Any) -> None:
-        if not self._confirm_discard():
-            return
-        self._show_setting(self._visible_settings[event.GetSelection()])
-
-    def _show_setting(self, setting: Any) -> None:
-        self.setting = setting
-        self.dirty = False
-        self.setting_label.SetLabel(self._setting_name(setting))
-        self.type_cue.SetLabel(f"Type: {getattr(setting, 'value_type', 'text')}")
-        self._make_value_control(setting)
-        self._set_status(f"Selected {self._setting_name(setting)}. Press Tab to edit.")
 
     def _make_value_control(self, setting: Any) -> None:
         for control in self._controls:
