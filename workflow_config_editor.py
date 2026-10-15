@@ -192,7 +192,8 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         self.guided_back_button = wx.Button(panel, label="Back")
         self.guided_next_button = wx.Button(panel, label="Next")
         self.guided_skip_button = wx.Button(panel, label="Skip category")
-        for button in (self.guided_back_button, self.guided_next_button, self.guided_skip_button):
+        self.guided_pause_button = wx.Button(panel, label="Pause guided setup")
+        for button in (self.guided_back_button, self.guided_next_button, self.guided_skip_button, self.guided_pause_button):
             button.Hide()
             guided_buttons.Add(button, 0, wx.RIGHT, 6)
         outer.Add(guided_buttons, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
@@ -215,6 +216,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         self.guided_back_button.Bind(wx.EVT_BUTTON, self._on_guided_back)
         self.guided_next_button.Bind(wx.EVT_BUTTON, self._on_guided_next)
         self.guided_skip_button.Bind(wx.EVT_BUTTON, self._on_guided_skip)
+        self.guided_pause_button.Bind(wx.EVT_BUTTON, self._pause_guided)
         self.Bind(wx.EVT_CLOSE, self._on_close)
         self.step = 3
         self._answer_control = None
@@ -222,6 +224,8 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         self._draft_value: Optional[str] = None
         self._guided = False
         self.guidance_level = "detailed"
+        self._guided_completed: set[str] = set()
+        self._guided_resume: Optional[dict[str, Any]] = None
         self._guided_phase: Optional[str] = None
         self._guided_categories: list[str] = []
         self._guided_category_pos = 0
@@ -234,20 +238,66 @@ class ConfigEditorFrame(wx.Frame if wx else object):
             self._set_status("No configurations are available. Choose Reload (F5) first.")
             return
         self._guided = True
-        self._guided_phase = "category"
-        self._guided_categories = [category for category in self.categories[1:] if self._category_has_settings(category)]
-        self._guided_category_pos = 0
+        if self._guided_resume:
+            self._guided_phase = str(self._guided_resume.get("phase", "category"))
+            self._guided_categories = list(self._guided_resume.get("categories", []))
+            self._guided_category_pos = int(self._guided_resume.get("category_pos", 0))
+        else:
+            self._guided_phase = "category"
+            self._guided_categories = [category for category in self.categories[1:] if self._category_has_settings(category)]
+            self._guided_category_pos = 0
+            self._guided_completed = set()
         if not self._guided_categories:
             self._guided = False
             self._guided_phase = None
             self._set_status("No editable categories are available in this configuration.")
             return
         self.progress.Show()
-        for button in (self.guided_back_button, self.guided_next_button, self.guided_skip_button):
+        self.guided_button.SetLabel("Resume guided setup" if self._guided_resume else "Start guided change")
+        for button in (self.guided_back_button, self.guided_next_button, self.guided_skip_button, self.guided_pause_button):
             button.Show()
         self.guided_back_button.Enable(False)
         self.Layout()
         self._show_guided_category()
+
+    def _guided_state_label(self, category: str) -> str:
+        if category in self._guided_completed:
+            return "Done"
+        if self._guided and self._guided_categories and category == self._guided_categories[self._guided_category_pos]:
+            return "In progress"
+        return "Not started"
+
+    def _guided_resume_state(self) -> dict[str, Any]:
+        return {
+            "phase": self._guided_phase or "category",
+            "categories": list(self._guided_categories),
+            "category_pos": self._guided_category_pos,
+        }
+
+    def _refresh_guided_checklist(self) -> None:
+        if not self.categories:
+            return
+        labels = [self.category_labels[0]]
+        labels.extend(
+            f"{label} [{self._guided_state_label(category)}]"
+            for category, label in zip(self.categories[1:], self.category_labels[1:])
+        )
+        self.category_list.Set(labels)
+        if self.category in self.categories:
+            self.category_list.SetSelection(self.categories.index(self.category))
+
+    def _pause_guided(self, _event: Any) -> None:
+        if not self._guided:
+            return
+        self._guided_resume = self._guided_resume_state()
+        self._guided = False
+        self.progress.Hide()
+        for button in (self.guided_back_button, self.guided_next_button, self.guided_skip_button, self.guided_pause_button):
+            button.Hide()
+        self.guided_button.SetLabel("Resume guided setup")
+        self._refresh_guided_checklist()
+        self.Layout()
+        self._set_status("Guided setup paused. Choose Resume guided setup to continue.")
 
     def _show_guided_category(self) -> None:
         category = self._guided_categories[self._guided_category_pos]
@@ -258,6 +308,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         self._draft_value = None
         self._populate_setting_choices()
         self._refresh_detail()
+        self._refresh_guided_checklist()
         self._set_guided_step(
             f"Category {self._guided_category_pos + 1} of {len(self._guided_categories)}. "
             f"Question 1 of 4: Choose a category. {self._category_guidance(category)}"
@@ -317,7 +368,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         self._guided_phase = None
         self.progress.SetLabel("Guided setup complete. Review or save your change.")
         self._set_status("Guided setup complete. Review or save your change.")
-        for button in (self.guided_back_button, self.guided_next_button, self.guided_skip_button):
+        for button in (self.guided_back_button, self.guided_next_button, self.guided_skip_button, self.guided_pause_button):
             button.Hide()
         self.Layout()
 
@@ -534,7 +585,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         self.review_button.Enable(False)
         self.guided_button.Enable(False)
         self.progress.Hide()
-        for button in (self.guided_back_button, self.guided_next_button, self.guided_skip_button):
+        for button in (self.guided_back_button, self.guided_next_button, self.guided_skip_button, self.guided_pause_button):
             button.Hide()
         self.another_button.Enable(False)
         self.undo_button.Enable(False)
@@ -906,6 +957,8 @@ class ConfigEditorFrame(wx.Frame if wx else object):
             result = self.backend.save_setting(self.file, self.setting, proposed, self.file_hash)
             self.file_hash = getattr(result, "sha256", None) or self._hash_after_save(result)
             continue_guided = self._guided and self._guided_phase == "review" and self._guided_category_pos + 1 < len(self._guided_categories)
+            if self._guided and self._guided_phase == "review":
+                self._guided_completed.add(self._guided_categories[self._guided_category_pos])
             self.dirty = False
             self._draft_value = None
             if continue_guided:
@@ -914,8 +967,10 @@ class ConfigEditorFrame(wx.Frame if wx else object):
             else:
                 self._guided = False
                 self._guided_phase = None
+                self._guided_resume = None
+                self.guided_button.SetLabel("Start guided change")
                 self.progress.Hide()
-                for button in (self.guided_back_button, self.guided_next_button, self.guided_skip_button):
+                for button in (self.guided_back_button, self.guided_next_button, self.guided_skip_button, self.guided_pause_button):
                     button.Hide()
             self.Layout()
             backup = getattr(result, "backup_path", None)
@@ -1205,6 +1260,14 @@ if __name__ == "__main__":
         assert frame._guided_phase == "category"
         assert frame.progress.GetLabel().startswith("Category 1 of")
         assert frame.progress.IsShown()
+        assert frame._guided_state_label(frame._guided_categories[0]) == "In progress"
+        frame._guided_completed.add(frame._guided_categories[0])
+        assert frame._guided_state_label(frame._guided_categories[0]) == "Done"
+        assert frame._guided_resume_state()["category_pos"] == 0
+        frame._pause_guided(None)
+        assert frame.guided_button.GetLabel() == "Resume guided setup"
+        frame._start_guided(None)
+        assert frame._guided
         frame._on_guided_next(None)
         assert frame._guided_phase == "setting"
         frame._on_guided_next(None)

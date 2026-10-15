@@ -10,6 +10,8 @@ For a first change, activate `Start guided change` or press `Ctrl+G`. The wizard
 
 `Welcome` gives a short orientation. `Guidance: Detailed` can be toggled to `Guidance: Short` for less spoken text.
 
+`Pause guided setup` keeps the current category and question in memory. The button changes to `Resume guided setup`; category labels show `Not started`, `In progress`, or `Done`.
+
 For NVDA, use `Tab` or `F6` to move between the configuration, category, settings, and editor panes. Use `Ctrl+F` to jump to and select the settings search, `Ctrl+G` to start guided mode, arrow keys in lists, `Enter` to select a setting, and `Escape` to clear a search with no matches. `Ctrl+R` reviews the pending change; `Ctrl+B` opens backup history; `Ctrl+S` saves it. Press `F1` or activate `Help (F1)` whenever you get stuck; focus returns to the control you were using when the instructions close.
 
 The repeatable spoken-output check is in [`docs/ACCESSIBILITY-CHECKLIST.md`](docs/ACCESSIBILITY-CHECKLIST.md).

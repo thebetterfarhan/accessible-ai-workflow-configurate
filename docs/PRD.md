@@ -37,6 +37,8 @@ The guided entry point opens a keyboard-friendly category-by-category wizard. It
 
 The welcome orientation and guidance toggle support new users who need either detailed or shorter spoken instructions.
 
+Guided setup exposes a category checklist and can pause and resume within the current session without writing a partial change.
+
 ## Accessibility requirements
 
 - Keyboard-only operation.
