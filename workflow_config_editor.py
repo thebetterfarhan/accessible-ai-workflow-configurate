@@ -740,6 +740,9 @@ if __name__ == "__main__":
         frame._show_step(2)
         frame._show_step(3)
         assert isinstance(frame._answer_control, wx.CheckBox)
+        children = frame.answer_panel.GetChildren()
+        assert len(children) == 1
+        assert children[0].GetName() == frame._answer_control.GetName()
         frame._show_step(4)
         assert frame.progress.GetLabel() == "Question 5 of 5"
         assert frame.next_button.GetLabel() == "Save this change"
