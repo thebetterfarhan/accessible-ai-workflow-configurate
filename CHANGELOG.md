@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.0.1 - 2026-10-15
 
 ### Added
 
@@ -22,4 +22,4 @@
 
 ### Release boundary
 
-This entry describes the current local release candidate. The source is MIT licensed. The portable EXE is not yet published, signed, or deployed.
+This entry describes local release candidate `v0.0.1`. The source is MIT licensed. The portable EXE is not yet published, signed, or deployed.

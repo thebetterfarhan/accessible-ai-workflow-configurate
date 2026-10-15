@@ -7,6 +7,7 @@ Commit: `dd6da57a2cad4338ee714bb72f77b712138c6bf3`
 
 - App: Accessible AI Workflow Configurate
 - Artifact: `dist/AccessibleAIWorkflowConfigurate-local.zip`
+- Version: `v0.0.1`
 - Boundary: local release candidate only
 - License: MIT for project source and documentation
 - Publication: not approved, not pushed, not tagged, not signed, and not deployed

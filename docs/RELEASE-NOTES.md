@@ -1,4 +1,4 @@
-# Accessible AI Workflow Configurate local release candidate
+# Accessible AI Workflow Configurate v0.0.1 local release candidate
 
 ## Included
 
