@@ -81,14 +81,22 @@ class ConfigEditorFrame(wx.Frame if wx else object):
     def _build_ui(self) -> None:
         panel = wx.Panel(self)
         outer = wx.BoxSizer(wx.VERTICAL)
-        instructions = wx.StaticText(panel, label="New here? Activate Start guided change for a category-by-category guide. Use Back and Next to answer each question. You can also edit directly. F6 moves between panes.")
-        instructions.SetName("Keyboard instructions")
-        instructions.Wrap(940)
-        outer.Add(instructions, 0, wx.ALL | wx.EXPAND, 8)
+        self.instructions = wx.StaticText(panel, label="New here? Activate Start guided change for a category-by-category guide. Use Back and Next to answer each question. You can also edit directly. F6 moves between panes.")
+        self.instructions.SetName("Keyboard instructions")
+        self.instructions.Wrap(940)
+        outer.Add(self.instructions, 0, wx.ALL | wx.EXPAND, 8)
         self.help_button = wx.Button(panel, label="Help (F1)")
         self.help_button.SetName("Help")
         self.help_button.SetToolTip("Read keyboard and editor instructions")
         outer.Add(self.help_button, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
+        orientation_buttons = wx.BoxSizer(wx.HORIZONTAL)
+        self.welcome_button = wx.Button(panel, label="Welcome")
+        self.welcome_button.SetName("Welcome")
+        self.guidance_button = wx.Button(panel, label="Guidance: Detailed")
+        self.guidance_button.SetName("Guidance detail")
+        orientation_buttons.Add(self.welcome_button, 0, wx.RIGHT, 6)
+        orientation_buttons.Add(self.guidance_button, 0)
+        outer.Add(orientation_buttons, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
         self.guided_button = wx.Button(panel, label="Start guided change")
         self.guided_button.SetName("Start guided change")
         self.guided_button.SetToolTip("Guide you through each category with Back and Next")
@@ -201,6 +209,8 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         self.backups_button.Bind(wx.EVT_BUTTON, self._on_backups)
         self.reload_button.Bind(wx.EVT_BUTTON, self._on_reload)
         self.help_button.Bind(wx.EVT_BUTTON, self._on_help)
+        self.welcome_button.Bind(wx.EVT_BUTTON, self._on_welcome)
+        self.guidance_button.Bind(wx.EVT_BUTTON, lambda event: self._set_guidance_level("short" if self.guidance_level == "detailed" else "detailed"))
         self.guided_button.Bind(wx.EVT_BUTTON, self._start_guided)
         self.guided_back_button.Bind(wx.EVT_BUTTON, self._on_guided_back)
         self.guided_next_button.Bind(wx.EVT_BUTTON, self._on_guided_next)
@@ -211,6 +221,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         self._radio_values: list[str] = []
         self._draft_value: Optional[str] = None
         self._guided = False
+        self.guidance_level = "detailed"
         self._guided_phase: Optional[str] = None
         self._guided_categories: list[str] = []
         self._guided_category_pos = 0
@@ -1051,6 +1062,34 @@ class ConfigEditorFrame(wx.Frame if wx else object):
             dialog.Destroy()
         self._restore_help_focus()
 
+    def _on_welcome(self, _event: Any) -> None:
+        self._help_return_focus = wx.Window.FindFocus()
+        message = (
+            "Welcome to Workflow Config Editor.\n\n"
+            "For a first change, choose Start guided change. It explains each category, asks one question at a time, "
+            "and uses Back, Next, and Skip category. Review the change before saving.\n\n"
+            "You can also choose a configuration, category, and setting directly. F6 moves between panes. "
+            "Press Guidance detail to switch between short and detailed spoken instructions."
+        )
+        dialog = wx.MessageDialog(self, message, "Welcome", wx.OK | wx.ICON_INFORMATION)
+        try:
+            dialog.ShowModal()
+        finally:
+            dialog.Destroy()
+        self._restore_help_focus()
+
+    def _set_guidance_level(self, level: str) -> None:
+        self.guidance_level = "short" if level == "short" else "detailed"
+        label = "Short" if self.guidance_level == "short" else "Detailed"
+        self.guidance_button.SetLabel(f"Guidance: {label}")
+        if self.guidance_level == "short":
+            self.instructions.SetLabel("Guided mode uses Back, Next, and Skip category. F6 moves between panes. F1 opens help.")
+        else:
+            self.instructions.SetLabel("New here? Activate Start guided change for a category-by-category guide. Use Back and Next to answer each question. You can also edit directly. F6 moves between panes.")
+        self.instructions.Wrap(940)
+        self.Layout()
+        self._set_status(f"Guidance set to {self.guidance_level}.")
+
     def _restore_help_focus(self) -> None:
         target = getattr(self, "_help_return_focus", None)
         if target is not None and target.IsShown() and target.IsEnabled():
@@ -1157,6 +1196,11 @@ if __name__ == "__main__":
         assert frame.guided_next_button.GetLabel() == "Next"
         assert frame.guided_back_button.GetLabel() == "Back"
         assert frame.guided_skip_button.GetLabel() == "Skip category"
+        assert frame.welcome_button.GetLabel() == "Welcome"
+        assert frame.guidance_button.GetLabel() == "Guidance: Detailed"
+        frame._set_guidance_level("short")
+        assert frame.guidance_button.GetLabel() == "Guidance: Short"
+        frame._set_guidance_level("detailed")
         frame._start_guided(None)
         assert frame._guided_phase == "category"
         assert frame.progress.GetLabel().startswith("Category 1 of")

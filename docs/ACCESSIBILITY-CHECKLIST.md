@@ -3,6 +3,7 @@
 Use the packaged `dist\WorkflowConfigEditor.exe` with NVDA running. Do not save a value during this check.
 
 1. Start the editor. NVDA should announce the keyboard instructions, Help, and the current editor status.
+   Activate `Welcome` and confirm the orientation is spoken. Toggle `Guidance: Detailed` to `Guidance: Short`; the instructions should become shorter without removing control names.
 2. Activate `Start guided change` or press `Ctrl+G`. The first populated category should announce `Category 1 of N, Question 1 of 4`.
 3. Use `Back`, `Next`, and `Skip category`. Back must preserve the previous answer; Next must advance; Skip must move to the next category.
 4. Press `Tab` to reach `Categories`. Use Up and Down. The known 19 categories should be present, including zero-count categories; declared extra categories should also appear with a count.
