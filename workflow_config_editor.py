@@ -184,12 +184,26 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         try:
             self.files = list(self.backend.discover_files())
             if self.files:
+                self.next_button.Enable(True)
+                self.save_button.Enable(True)
                 self._load_file(0)
                 self._show_step(0)
             else:
-                self._set_status("No configuration files found")
+                self._show_unavailable("No configuration files found")
         except Exception as exc:
-            self._set_status(f"Could not discover files: {exc}")
+            self._show_unavailable(f"Could not discover files: {exc}")
+
+    def _show_unavailable(self, message: str) -> None:
+        """Keep an empty discovery state actionable through Reload only."""
+        self.question.SetLabel(message)
+        self.back_button.Enable(False)
+        self.next_button.Enable(False)
+        self.save_button.Enable(False)
+        self.another_button.Enable(False)
+        self.undo_button.Enable(False)
+        self.reload_button.Enable(True)
+        self._set_status(f"{message}. Choose Reload (F5) to try again.")
+        self.reload_button.SetFocus()
 
     def _load_file(self, index: int) -> None:
         item = self.files[index]
@@ -659,7 +673,10 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         return None
 
     def _on_reload(self, _event: Any) -> None:
-        if self.file is None or not self._confirm_discard():
+        if self.file is None:
+            self._discover()
+            return
+        if not self._confirm_discard():
             return
         self._load_file(self.files.index(self.file))
         self._show_step(0)
@@ -719,6 +736,16 @@ class _SmokeBackend:
         raise AssertionError("smoke mode must not save")
 
 
+class _EmptySmokeBackend(_SmokeBackend):
+    def __init__(self) -> None:
+        self.available = False
+
+    def discover_files(self) -> list[Any]:
+        if self.available:
+            return super().discover_files()
+        return []
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Edit workflow configuration")
     parser.add_argument("--smoke", action="store_true", help="construct controls and exit without touching files")
@@ -727,6 +754,15 @@ if __name__ == "__main__":
         if wx is None:
             raise SystemExit("wxPython is required for --smoke")
         app = wx.App(False)
+        empty_backend = _EmptySmokeBackend()
+        empty_frame = ConfigEditorFrame(empty_backend)
+        assert not empty_frame.next_button.IsEnabled()
+        assert not empty_frame.save_button.IsEnabled()
+        assert empty_frame.reload_button.IsEnabled()
+        empty_backend.available = True
+        empty_frame._on_reload(None)
+        assert empty_frame.next_button.IsEnabled()
+        empty_frame.Destroy()
         frame = ConfigEditorFrame(_SmokeBackend())
         assert frame.step == 0
         assert frame.progress.GetLabel() == "Question 1 of 5"
