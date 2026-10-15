@@ -12,6 +12,8 @@ For a first change, activate `Start guided change` or press `Ctrl+G`. The wizard
 
 `Pause guided setup` keeps the current category and question in memory. The button changes to `Resume guided setup`; category labels show `Not started`, `In progress`, or `Done`.
 
+Guided mode also shows a short `Guided help` instruction for the current step: choose a category, choose a setting, enter an unsaved value, or review before saving.
+
 `Next` validates the answer before moving on. Invalid JSON, numbers, or required values keep focus on the answer and explain the fix. Guided value controls also show an example.
 
 `Change summary` lists the current and saved guided changes. `Reset category` restores the loaded value for the current pending answer without writing to disk.

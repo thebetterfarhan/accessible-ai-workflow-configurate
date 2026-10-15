@@ -21,5 +21,6 @@ Use the packaged `dist\WorkflowConfigEditor.exe` with NVDA running. Do not save 
 15. Press `F5` and confirm the reload prompt. The original value should return. Close the editor without saving.
 16. Press `Ctrl+B` or choose `Backups`, select a backup with the keyboard, cancel once, then reopen it and confirm restore. The current file should be backed up before restoration.
 17. Activate `All sources`. NVDA should read the total editable setting count and each supported source. Return focus should be the `All sources` button after closing the read-only dialog.
+18. Start guided mode and move through each question. NVDA should announce the `Guided help` cue for choosing a category, choosing a setting, entering an unsaved value, and reviewing before saving.
 
 Record any failure with the key pressed, the last spoken label, and whether focus stayed in the expected pane. Automated smoke tests and accessibility trees do not replace this spoken-output check.

@@ -41,6 +41,8 @@ Guided setup exposes a category checklist and can pause and resume within the cu
 
 Guided Next validates the current answer before advancing and provides a type-specific example for free-form values.
 
+Each guided step exposes one plain-language action cue so a new user knows what to do before pressing Next.
+
 The change summary shows old and new values, while category reset discards only the current pending answer after confirmation.
 
 Safe presets are preview-only until the existing review/save action is confirmed. Recent changes and health checks are read-only views.
@@ -95,6 +97,7 @@ Credentials, auth files, runtime history, state, and caches are excluded. Backup
 - Presets never write without an explicit review and save confirmation.
 - Health and recent-change views are read-only.
 - All sources lists the discovered supported sources and the total editable setting count without exposing raw values.
+- Guided steps show a plain-language action cue and make clear that answers are not saved until the review and save actions.
 - A fixture save preserves comments and rejects an external hash change.
 - A fixture undo restores the exact prior bytes and keeps a recovery backup.
 - Review-before-save shows the target, current value, and pending value before writing.

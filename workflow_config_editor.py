@@ -106,6 +106,11 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         self.progress.SetName("Guided progress")
         self.progress.Hide()
         outer.Add(self.progress, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
+        self.guided_hint = wx.StaticText(panel, label="")
+        self.guided_hint.SetName("Guided help")
+        self.guided_hint.Wrap(940)
+        self.guided_hint.Hide()
+        outer.Add(self.guided_hint, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
         panes = wx.BoxSizer(wx.HORIZONTAL)
         left = wx.Panel(panel)
         left.SetName("Configuration and categories")
@@ -626,6 +631,14 @@ class ConfigEditorFrame(wx.Frame if wx else object):
     def _set_guided_step(self, text: str) -> None:
         self.progress.SetLabel(text)
         self.question.SetLabel(text)
+        hints = {
+            "category": "Choose the area you want to change, then activate Next.",
+            "setting": "Choose one setting from the list. Use the search box if the list is long.",
+            "value": "Choose an option or type a value. Your answer is not saved yet.",
+            "review": "Check the current and new values. Activate Review change, then save only when ready.",
+        }
+        self.guided_hint.SetLabel(hints.get(self._guided_phase or "", ""))
+        self.guided_hint.Show(bool(self._guided))
         self.guided_back_button.Enable(self._guided_category_pos > 0 or self._guided_phase not in (None, "category"))
         self.guided_next_button.SetLabel("Next category" if self._guided_phase == "review" else "Next")
         self.guided_skip_button.Enable(self._guided_phase in ("category", "setting", "value", "review"))
@@ -797,6 +810,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         self.review_button.Enable(False)
         self.guided_button.Enable(False)
         self.progress.Hide()
+        self.guided_hint.Hide()
         for button in (self.guided_back_button, self.guided_next_button, self.guided_skip_button, self.guided_pause_button, self.reset_category_button):
             button.Hide()
         self.another_button.Enable(False)
@@ -1460,6 +1474,8 @@ if __name__ == "__main__":
         assert not frame.progress.IsShown()
         assert frame.guided_button.GetLabel() == "Start guided change"
         assert frame.status.GetLabel().startswith("New here")
+        assert frame.guided_hint.GetName() == "Guided help"
+        assert not frame.guided_hint.IsShown()
         assert wx.Window.FindFocus() is frame.guided_button
         assert frame.config_choice.GetSelection() == 0
         frame._load_file(0)
@@ -1499,6 +1515,7 @@ if __name__ == "__main__":
         frame._start_guided(None)
         assert frame._guided_phase == "category"
         assert frame.progress.GetLabel().startswith("Category 1 of")
+        assert "Choose the area" in frame.guided_hint.GetLabel()
         assert frame.progress.IsShown()
         assert frame._guided_state_label(frame._guided_categories[0]) == "In progress"
         frame._guided_completed.add(frame._guided_categories[0])
@@ -1578,8 +1595,10 @@ if __name__ == "__main__":
         frame._choose_setting(0)
         frame._on_guided_next(None)
         assert "Question 3 of 4" in frame.progress.GetLabel()
+        assert "not saved yet" in frame.guided_hint.GetLabel()
         frame._on_guided_next(None)
         assert "Question 4 of 4" in frame.progress.GetLabel()
+        assert "current and new values" in frame.guided_hint.GetLabel()
         review = frame._review_text()
         assert "Current value: false" in review
         assert "Pending value: false" in review
