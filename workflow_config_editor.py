@@ -253,6 +253,8 @@ class ConfigEditorFrame(wx.Frame if wx else object):
                 self._setting_list.SetFocus()
             elif source is self._setting_list and self.setting is not None:
                 self._refresh_detail()
+                if self._answer_control is not None:
+                    self._answer_control.SetFocus()
             else:
                 event.Skip()
         elif key == wx.WXK_F5:
@@ -796,6 +798,12 @@ if __name__ == "__main__":
         frame.category_list.SetFocus()
         frame._focus_pane()
         assert wx.Window.FindFocus() is frame._setting_search
+        frame._setting_list.SetFocus()
+        enter = wx.KeyEvent(wx.wxEVT_CHAR_HOOK)
+        enter.SetKeyCode(wx.WXK_RETURN)
+        enter.SetEventObject(frame._setting_list)
+        frame._on_key(enter)
+        assert wx.Window.FindFocus() is frame._answer_control
         assert frame.save_button.GetLabel().startswith("Save change")
         assert frame.reload_button.GetLabel().startswith("Reload")
         assert frame.undo_button.GetLabel() == "Undo last change"
