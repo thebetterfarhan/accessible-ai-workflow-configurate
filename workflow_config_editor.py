@@ -496,13 +496,34 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         lines.extend(["", "Authentication, runtime state, history, and cache files are excluded for safety."])
         return "\n".join(lines)
 
+    def _inventory_choices(self) -> list[str]:
+        return [
+            f"{row['name']} — {row['count']} editable settings" if not row.get("error")
+            else f"{row['name']} — unavailable ({row['error']})"
+            for row in self._inventory_rows()
+        ]
+
     def _show_inventory(self, _event: Any) -> None:
-        dialog = wx.MessageDialog(self, self._inventory_text(), "All sources", wx.OK | wx.ICON_INFORMATION)
+        choices = self._inventory_choices()
+        if not choices:
+            self._set_status("No supported sources are available.")
+            return
+        dialog = wx.SingleChoiceDialog(self, "Choose a source to open.", "All sources", choices)
         try:
-            dialog.ShowModal()
+            if dialog.ShowModal() != wx.ID_OK:
+                self._set_status("Source selection cancelled.")
+                return
+            index = dialog.GetSelection()
         finally:
             dialog.Destroy()
-        self._restore_help_focus()
+        if not self._confirm_discard():
+            self._set_status("Source selection cancelled. The pending value is still active.")
+            self.inventory_button.SetFocus()
+            return
+        self._load_file(index)
+        self._refresh_lists()
+        self.config_choice.SetFocus()
+        self._set_status(f"Opened {self._file_name(self.file)}. Choose a category.")
 
     def _show_guided_category(self) -> None:
         category = self._guided_categories[self._guided_category_pos]
@@ -1520,6 +1541,7 @@ if __name__ == "__main__":
         assert frame.health_button.GetLabel() == "Health check"
         assert frame.inventory_button.GetLabel() == "All sources"
         assert frame._inventory_rows()[0]["count"] == 1
+        assert frame._inventory_choices() == ["Smoke configuration — 1 editable settings"]
         assert "Total editable settings: 1" in frame._inventory_text()
         assert "Guided changes" in frame._change_summary_text()
         assert frame.welcome_button.GetLabel() == "Welcome"
