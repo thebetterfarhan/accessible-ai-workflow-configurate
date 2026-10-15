@@ -81,7 +81,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
     def _build_ui(self) -> None:
         panel = wx.Panel(self)
         outer = wx.BoxSizer(wx.VERTICAL)
-        instructions = wx.StaticText(panel, label="Choose a configuration, category, and setting. Edit the value, then choose Save change. F6 moves between panes.")
+        instructions = wx.StaticText(panel, label="New here? Activate Start guided change, then press Enter for each question. You can also choose a configuration, category, and setting directly. F6 moves between panes.")
         instructions.SetName("Keyboard instructions")
         instructions.Wrap(940)
         outer.Add(instructions, 0, wx.ALL | wx.EXPAND, 8)
@@ -357,8 +357,8 @@ class ConfigEditorFrame(wx.Frame if wx else object):
                 self.guided_button.Enable(True)
                 self._load_file(0)
                 self._refresh_lists()
-                self.config_choice.SetFocus()
-                self._set_status("Choose a configuration, category, and setting.")
+                self.guided_button.SetFocus()
+                self._set_status("New here? Activate Start guided change, or choose a configuration directly.")
             else:
                 self._show_unavailable("No configuration files found")
         except Exception as exc:
@@ -961,7 +961,8 @@ if __name__ == "__main__":
         assert frame.step == 3
         assert not frame.progress.IsShown()
         assert frame.guided_button.GetLabel() == "Start guided change"
-        assert frame.status.GetLabel().startswith("Choose a configuration")
+        assert frame.status.GetLabel().startswith("New here")
+        assert wx.Window.FindFocus() is frame.guided_button
         assert frame.config_choice.GetSelection() == 0
         frame._load_file(0)
         assert frame.status.GetLabel().startswith("Loaded Smoke configuration")
