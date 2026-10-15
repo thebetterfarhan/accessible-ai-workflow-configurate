@@ -618,7 +618,14 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         if self.setting is None or not self._controls:
             self.pending_label.SetLabel("")
             return
-        self.pending_label.SetLabel(f"Pending value: {self._typed_value()}")
+        pending = self._typed_value()
+        self.pending_label.SetLabel(f"Pending value: {pending}")
+        self._answer_control.SetName(
+            f"{self._setting_name(self.setting)}. "
+            f"Current value: {getattr(self.setting, 'value', '')}. "
+            f"Type: {getattr(self.setting, 'value_type', 'text')}. "
+            f"Pending value: {pending}."
+        )
 
     def _review_text(self) -> str:
         if self.file is None or self.setting is None or not self._controls:
@@ -846,6 +853,9 @@ if __name__ == "__main__":
         assert frame.category_list.GetCount() == 2
         assert frame._setting_list.GetCount() == 1
         assert frame.answer_panel.GetName() == "Value editor"
+        assert "Current value: false" in frame._answer_control.GetName()
+        assert "Type: boolean" in frame._answer_control.GetName()
+        assert "Pending value: false" in frame._answer_control.GetName()
         frame._setting_search.SetFocus()
         frame._help_return_focus = frame._setting_search
         frame._restore_help_focus()
@@ -890,6 +900,7 @@ if __name__ == "__main__":
         frame._answer_control.SetValue(True)
         frame._on_value(None)
         assert frame.pending_label.GetLabel() == "Pending value: true"
+        assert "Pending value: true" in frame._answer_control.GetName()
         frame.dirty = False
         frame._on_reload(None)
         assert frame.step == 3
