@@ -39,6 +39,8 @@ The welcome orientation and guidance toggle support new users who need either de
 
 Guided setup exposes a category checklist and can pause and resume within the current session without writing a partial change.
 
+Guided Next validates the current answer before advancing and provides a type-specific example for free-form values.
+
 ## Accessibility requirements
 
 - Keyboard-only operation.

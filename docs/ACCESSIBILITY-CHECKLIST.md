@@ -9,13 +9,14 @@ Use the packaged `dist\WorkflowConfigEditor.exe` with NVDA running. Do not save 
 4. Press `Tab` to reach `Categories`. Use Up and Down. The known 19 categories should be present, including zero-count categories; declared extra categories should also appear with a count.
 5. In guided mode, listen for the category purpose and the possible value explanations before choosing a setting value.
 6. Activate `Pause guided setup`, then `Resume guided setup`. NVDA should hear the same category/question and checklist states should remain available.
-7. Press `F6` to move through the configuration, category, settings, and value-editor panes. Focus must not disappear or jump to a different pane.
-8. In the settings search, type a short name. The result count should update. Press `Escape` after a no-match search; the full list should return.
-9. Focus a setting and press `Enter`. NVDA should announce the setting name, current value, type, pending value, and the editable control.
+7. Enter an invalid value and activate `Next`. The wizard must stay on the question, focus the answer, and speak a repair instruction; a valid example should be available.
+8. Press `F6` to move through the configuration, category, settings, and value-editor panes. Focus must not disappear or jump to a different pane.
+9. In the settings search, type a short name. The result count should update. Press `Escape` after a no-match search; the full list should return.
+10. Focus a setting and press `Enter`. NVDA should announce the setting name, current value, type, pending value, and the editable control.
    For an AGENTS.md or taste section, the type cue should say `markdown section body`, and the answer should be a multiline editor.
-10. Press `F1`, close Help, and confirm focus returns to the control that opened Help.
-11. Change the control, but do not save. NVDA should report the pending value. Press `Ctrl+R` or use `Review change`; both should open the review before saving.
-12. Press `F5` and confirm the reload prompt. The original value should return. Close the editor without saving.
-13. Press `Ctrl+B` or choose `Backups`, select a backup with the keyboard, cancel once, then reopen it and confirm restore. The current file should be backed up before restoration.
+11. Press `F1`, close Help, and confirm focus returns to the control that opened Help.
+12. Change the control, but do not save. NVDA should report the pending value. Press `Ctrl+R` or use `Review change`; both should open the review before saving.
+13. Press `F5` and confirm the reload prompt. The original value should return. Close the editor without saving.
+14. Press `Ctrl+B` or choose `Backups`, select a backup with the keyboard, cancel once, then reopen it and confirm restore. The current file should be backed up before restoration.
 
 Record any failure with the key pressed, the last spoken label, and whether focus stayed in the expected pane. Automated smoke tests and accessibility trees do not replace this spoken-output check.

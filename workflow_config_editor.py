@@ -332,6 +332,12 @@ class ConfigEditorFrame(wx.Frame if wx else object):
             if self._answer_control is not None:
                 self._answer_control.SetFocus()
         elif self._guided_phase == "value":
+            error = self._value_error()
+            if error:
+                self._set_status(error)
+                if self._answer_control is not None:
+                    self._answer_control.SetFocus()
+                return
             self._guided_phase = "review"
             self._set_guided_step(f"Category {self._guided_category_pos + 1} of {len(self._guided_categories)}. Question 4 of 4: Check this change.")
             self.review_button.SetFocus()
@@ -411,6 +417,24 @@ class ConfigEditorFrame(wx.Frame if wx else object):
             return "Replace the section body in the multiline editor."
         return "Enter the value this workflow should use."
 
+    def _value_example(self, setting: Any) -> str:
+        value_type = str(getattr(setting, "value_type", "text")).lower()
+        if value_type in ("bool", "boolean"):
+            example = "true"
+        elif value_type in ("integer", "int"):
+            example = "42"
+        elif value_type in ("number", "float"):
+            example = "0.5"
+        elif value_type in ("array", "list"):
+            example = "[]"
+        elif value_type in ("object", "map", "json"):
+            example = "{}"
+        elif value_type == "markdown":
+            example = "Write a short instruction paragraph here."
+        else:
+            example = "your value"
+        return f"Example: {example}."
+
     def _set_guided_step(self, text: str) -> None:
         self.progress.SetLabel(text)
         self.question.SetLabel(text)
@@ -480,7 +504,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         value_type = str(getattr(self.setting, "value_type", "text"))
         cue = "Type: markdown section body" if value_type == "markdown" else f"Type: {value_type}"
         if self._guided:
-            cue = f"{cue}. {self._value_guidance(self.setting)}"
+            cue = f"{cue}. {self._value_guidance(self.setting)} {self._value_example(self.setting)}"
         self.type_cue.SetLabel(cue)
         self._make_value_control(self.setting)
         self._replace_answer(self._controls[0])
@@ -1268,8 +1292,13 @@ if __name__ == "__main__":
         assert frame.guided_button.GetLabel() == "Resume guided setup"
         frame._start_guided(None)
         assert frame._guided
+        frame._guided_phase = "value"
+        frame._value_error = lambda: "example validation error"
         frame._on_guided_next(None)
-        assert frame._guided_phase == "setting"
+        assert frame._guided_phase == "value"
+        assert "example" in frame._value_example(frame.setting).lower()
+        frame._value_error = lambda: None
+        frame._guided_phase = "setting"
         frame._on_guided_next(None)
         assert frame._guided_phase == "value"
         frame._on_guided_back(None)
