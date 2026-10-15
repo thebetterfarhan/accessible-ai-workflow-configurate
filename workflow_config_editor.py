@@ -277,6 +277,8 @@ class ConfigEditorFrame(wx.Frame if wx else object):
                 self.save_button.Enable(True)
                 self._load_file(0)
                 self._refresh_lists()
+                self.config_choice.SetFocus()
+                self._set_status("Choose a configuration, category, and setting.")
             else:
                 self._show_unavailable("No configuration files found")
         except Exception as exc:
@@ -766,6 +768,7 @@ if __name__ == "__main__":
         frame = ConfigEditorFrame(_SmokeBackend())
         assert frame.step == 3
         assert frame.progress.GetLabel().startswith("Ready")
+        assert frame.status.GetLabel().startswith("Choose a configuration")
         assert frame.config_choice.GetSelection() == 0
         assert frame.category_list.GetCount() == 2
         assert frame._setting_list.GetCount() == 1
