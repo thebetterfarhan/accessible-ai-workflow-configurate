@@ -75,11 +75,10 @@ Credentials, auth files, history, state, caches, and backup files are excluded.
 - The EXE starts without an unhandled exception.
 - A fixture save preserves comments and rejects an external hash change.
 - A fixture undo restores the exact prior bytes and keeps a recovery backup.
-- A live NVDA walkthrough completes the six-step flow without focus loss.
+- A live NVDA walkthrough completes the five-question flow and explicit save action without focus loss.
 
 ## Open decisions
 
 - Choose a signed installer or a portable EXE for distribution.
 - Decide whether to publish the bundled Node runtime or require an existing runtime.
 - Complete live NVDA validation on a representative Windows account.
-
