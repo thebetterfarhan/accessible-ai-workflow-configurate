@@ -128,6 +128,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         middle.SetSizer(middle_sizer)
         right = wx.Panel(panel)
         right.SetName("Setting editor")
+        self.editor_panel = right
         editor = wx.BoxSizer(wx.VERTICAL)
         self.question = wx.StaticText(right, label="Select a setting")
         self.question.SetName("Setting question")
@@ -314,6 +315,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         self._answer_control = control
         self.answer_sizer.Add(control, 0, wx.EXPAND | wx.ALL, 4)
         self.answer_panel.Layout()
+        self.editor_panel.Layout()
 
     def _set_category(self, index: int) -> None:
         self.category = self.categories[index]
