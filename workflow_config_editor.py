@@ -232,7 +232,10 @@ class ConfigEditorFrame(wx.Frame if wx else object):
     def _on_key(self, event: Any) -> None:
         key = event.GetKeyCode()
         source = event.GetEventObject()
-        if event.ControlDown() and key in (ord("S"), ord("s")):
+        if event.ControlDown() and key in (ord("F"), ord("f")):
+            self._setting_search.SetFocus()
+            self._setting_search.SelectAll()
+        elif event.ControlDown() and key in (ord("S"), ord("s")):
             self._on_save(event)
         elif key == wx.WXK_F1:
             self._on_help(event)
@@ -685,7 +688,8 @@ class ConfigEditorFrame(wx.Frame if wx else object):
             "you change the value. Choose Save change when ready.\n\n"
             "Keyboard: Tab moves through controls. F6 moves between configuration, category, "
             "settings, and editor panes. Arrow keys choose list items. Enter selects a setting. "
-            "Escape clears the setting search. F1 opens this help. F5 reloads. Ctrl+S saves.\n\n"
+            "Escape clears the setting search. Ctrl+F focuses and selects the search. "
+            "F1 opens this help. F5 reloads. Ctrl+S saves.\n\n"
             "Saving creates a backup. After saving, choose Make another change to continue, "
             "or Undo last change to restore the previous value."
         )
