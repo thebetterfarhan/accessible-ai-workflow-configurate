@@ -157,8 +157,16 @@ class ConfigEditorFrame(wx.Frame if wx else object):
             self._on_save(event)
         elif key == wx.WXK_F1:
             self._on_help(event)
-        elif key in (wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER) and event.GetEventObject() is self._answer_control:
-            self._on_next(event)
+        elif key in (wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER):
+            source = event.GetEventObject()
+            setting_step_control = self.step == 2 and (
+                source is getattr(self, "_setting_search", None)
+                or source is getattr(self, "_setting_list", None)
+            )
+            if source is self._answer_control or setting_step_control:
+                self._on_next(event)
+            else:
+                event.Skip()
         elif key == wx.WXK_F5:
             self._on_reload(event)
         else:
@@ -738,7 +746,11 @@ if __name__ == "__main__":
         assert not frame.undo_button.IsEnabled()
         frame._show_step(1)
         frame._show_step(2)
-        frame._show_step(3)
+        event = wx.KeyEvent(wx.wxEVT_CHAR_HOOK)
+        event.SetKeyCode(wx.WXK_RETURN)
+        event.SetEventObject(frame._setting_list)
+        frame._on_key(event)
+        assert frame.step == 3
         assert isinstance(frame._answer_control, wx.CheckBox)
         children = frame.answer_panel.GetChildren()
         assert len(children) == 1
