@@ -55,7 +55,7 @@ The guided entry point presents the same flow as four spoken questions while kee
 - CommandCode JSON settings.
 - Canonical AGENTS.md and taste source files, with synchronization hooks.
 
-Credentials, auth files, history, state, caches, and backup files are excluded.
+Credentials, auth files, runtime history, state, and caches are excluded. Backup files may be listed read-only for recovery and are never edited as settings.
 
 ## Safety and recovery
 
@@ -79,6 +79,9 @@ Credentials, auth files, history, state, caches, and backup files are excluded.
 - The EXE starts without an unhandled exception.
 - A fixture save preserves comments and rejects an external hash change.
 - A fixture undo restores the exact prior bytes and keeps a recovery backup.
+- Review-before-save shows the target, current value, and pending value before writing.
+- Backup history lists valid backups newest first and restores only after confirmation.
+- Guided mode announces the four configuration questions and uses the same safe save path.
 - A live NVDA walkthrough completes configuration, category, setting, edit, and save actions without focus loss.
 
 ## Open decisions
