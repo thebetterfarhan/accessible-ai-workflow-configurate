@@ -41,6 +41,8 @@ Codex, OpenCode, and CommandCode keep workflow behavior in different TOML, JSON,
 - Progress text announces the current question.
 - Status text explains the next action and save result.
 - NVDA flow uses Tab, Shift+Tab, arrow keys, and Enter without pointer use.
+- Escape clears a setting search so an empty result can be recovered without text editing commands.
+- Returning from Review keeps the proposed value available for editing.
 - Live NVDA validation remains a release gate.
 
 ## Supported sources
