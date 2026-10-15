@@ -163,6 +163,10 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         self.type_cue = wx.StaticText(right, label="")
         self.type_cue.SetName("Setting type")
         editor.Add(self.type_cue, 0, wx.BOTTOM, 4)
+        self.setting_help = wx.StaticText(right, label="")
+        self.setting_help.SetName("What this changes")
+        self.setting_help.Wrap(420)
+        editor.Add(self.setting_help, 0, wx.BOTTOM, 8)
         self.pending_label = wx.StaticText(right, label="")
         self.pending_label.SetName("Pending value")
         editor.Add(self.pending_label, 0, wx.BOTTOM, 8)
@@ -726,6 +730,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
             self.question.SetLabel("Select a setting")
             self.setting_label.SetLabel("")
             self.type_cue.SetLabel("")
+            self.setting_help.SetLabel("")
             self.pending_label.SetLabel("")
             self._replace_answer(wx.StaticText(self.answer_panel, label="Choose a setting from the list."))
             self._answer_control = None
@@ -740,6 +745,8 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         if self._guided:
             cue = f"{cue}. {self._value_guidance(self.setting)} {self._value_example(self.setting)}"
         self.type_cue.SetLabel(cue)
+        category = self._setting_category(self.setting)
+        self.setting_help.SetLabel(f"What this changes: {self._category_guidance(category)}")
         self._make_value_control(self.setting)
         self._replace_answer(self._controls[0])
         self._update_pending_label()
@@ -1525,6 +1532,7 @@ if __name__ == "__main__":
         assert "Read only" in frame._value_guidance(type("SandboxSetting", (), {"label": "Sandbox", "value": "read-only", "value_type": "text"})())
         assert frame._setting_list.GetCount() == 1
         assert frame.answer_panel.GetName() == "Value editor"
+        assert frame.setting_help.GetName() == "What this changes"
         original_setting = frame.setting
         frame.setting = type("MarkdownSetting", (), {"label": "Shared instructions", "path": "instructions", "value": "body", "value_type": "markdown"})()
         frame._refresh_detail()
@@ -1630,6 +1638,7 @@ if __name__ == "__main__":
         frame._restore_help_focus()
         assert wx.Window.FindFocus() is frame._setting_search
         frame._choose_setting(0)
+        assert "What this changes:" in frame.setting_help.GetLabel()
         frame._on_guided_next(None)
         assert "Question 3 of 4" in frame.progress.GetLabel()
         assert "not saved yet" in frame.guided_hint.GetLabel()
