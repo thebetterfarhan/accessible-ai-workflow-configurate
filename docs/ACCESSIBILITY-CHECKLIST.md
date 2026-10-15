@@ -3,7 +3,7 @@
 Use the packaged `dist\WorkflowConfigEditor.exe` with NVDA running. Do not save a value during this check.
 
 1. Start the editor. NVDA should announce the keyboard instructions, Help, and the current editor status.
-2. Activate `Start guided change` or press `Ctrl+G`. NVDA should announce Question 1 of 4 and focus the configuration combo.
+2. Activate `Start guided change` or press `Ctrl+G`. A keyboard-friendly Question 1 of 4 dialog should open for configuration.
 3. Press `Tab` until the configuration combo is focused. It should announce `Configuration` and the selected profile.
 4. Press `Tab` to reach `Categories`. Use Up and Down. All 19 categories should be present, including zero-count categories; each item should include its category name, description, and count.
 5. Press `F6` to move through the configuration, category, settings, and value-editor panes. Focus must not disappear or jump to a different pane.

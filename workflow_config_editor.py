@@ -209,7 +209,72 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         self.progress.Show()
         self.Layout()
         self._set_guided_step("Question 1 of 4: Choose a configuration.")
-        self.config_choice.SetFocus()
+        if not self._guided_wizard():
+            self._guided = False
+            self.progress.Hide()
+            self.Layout()
+
+    def _guided_wizard(self) -> bool:
+        """Ask the setup questions in keyboard-friendly dialogs."""
+        if not self.files:
+            self._set_status("No configurations are available. Choose Reload (F5) first.")
+            return False
+
+        def choose(title: str, prompt: str, choices: list[str]) -> Optional[int]:
+            dialog = wx.SingleChoiceDialog(self, prompt, title, choices)
+            try:
+                return dialog.GetSelection() if dialog.ShowModal() == wx.ID_OK else None
+            finally:
+                dialog.Destroy()
+
+        file_index = choose(
+            "Question 1 of 4: Configuration",
+            "Which configuration should I edit?",
+            [self._file_name(item) for item in self.files],
+        )
+        if file_index is None:
+            self._set_status("Guided setup cancelled.")
+            return False
+        self._load_file(file_index)
+        self._refresh_lists()
+
+        populated = [
+            (index, label)
+            for index, label in enumerate(self.category_labels[1:], start=1)
+            if self._category_has_settings(self.categories[index])
+        ]
+        category_choice = choose(
+            "Question 2 of 4: Category",
+            "Which category should I change?",
+            [label for _, label in populated],
+        )
+        if category_choice is None:
+            self._set_status("Guided setup cancelled.")
+            return False
+        category_index = populated[category_choice][0]
+        self.category_list.SetSelection(category_index)
+        self.category = self.categories[category_index]
+        self.setting = None
+        self._populate_setting_choices()
+        self._refresh_detail()
+
+        setting_choice = choose(
+            "Question 3 of 4: Setting",
+            "Which setting should I change?",
+            [self._setting_name(setting) for setting in self._visible_settings],
+        )
+        if setting_choice is None:
+            self._set_status("Guided setup cancelled.")
+            return False
+        self._choose_setting(setting_choice)
+        self._refresh_detail()
+        self._set_guided_step("Question 4 of 4: Choose or enter the value.")
+        if self._answer_control is not None:
+            self._answer_control.SetFocus()
+        return True
+
+    def _category_has_settings(self, category: str) -> bool:
+        return any(self._setting_category(setting) == category for setting in self.settings)
 
     def _set_guided_step(self, text: str) -> None:
         self.progress.SetLabel(text)
@@ -971,6 +1036,7 @@ if __name__ == "__main__":
         assert any("Sandbox" in frame.category_list.GetString(i) and "(0 settings)" in frame.category_list.GetString(i) for i in range(frame.category_list.GetCount()))
         assert frame._setting_list.GetCount() == 1
         assert frame.answer_panel.GetName() == "Value editor"
+        frame._guided_wizard = lambda: True
         frame._start_guided(None)
         assert frame.progress.GetLabel().startswith("Question 1 of 4")
         assert frame.question.GetLabel().startswith("Question 1 of 4")
