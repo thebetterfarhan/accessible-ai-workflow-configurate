@@ -4,6 +4,7 @@
 
 ### Added
 
+- MIT License for source and documentation.
 - Guided setup wizard with category and question progress, Back, Next, Skip, pause, resume, validation, examples, and plain-language help.
 - All-sources inventory with source counts and direct source opening.
 - Whole-workflow health checks with unavailable-source reasons.
@@ -20,4 +21,4 @@
 
 ### Release boundary
 
-This entry describes the current local release candidate. It is not a published, signed, or deployed release.
+This entry describes the current local release candidate. The source is MIT licensed. The portable EXE is not yet published, signed, or deployed.

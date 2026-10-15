@@ -67,7 +67,7 @@ When reporting a problem, include the app version or commit, Windows version, NV
 - Unsupported or malformed sources are reported as unavailable and are not repaired automatically.
 - The portable EXE is unsigned and has no automatic update service.
 - Spoken labels and focus recovery still require a real NVDA check; automated tests cannot prove speech output.
-- No open-source license has been selected for this local release candidate. Do not redistribute it publicly until licensing and publication decisions are complete.
+- The source code is licensed under the MIT License. See [`LICENSE`](LICENSE). The portable EXE is still an unsigned local release candidate until publication is approved.
 
 Build or refresh the executable:
 

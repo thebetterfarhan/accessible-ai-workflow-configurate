@@ -60,7 +60,7 @@ Confirm it contains the EXE and the user docs, and contains no source checkout, 
 - Release notes state what changed and the exact checks that passed.
 - Accessibility checklist states what was manually tested and what still needs NVDA.
 - Version and artifact hashes are recorded, or the candidate is explicitly marked `Unreleased`.
-- License and distribution status are stated. Do not invent a license; choose one before public distribution.
+- License and distribution status are stated. Confirm the `LICENSE` file is included before public distribution.
 
 ## Manual NVDA gate
 
