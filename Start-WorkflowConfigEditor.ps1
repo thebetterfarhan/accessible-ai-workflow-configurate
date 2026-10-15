@@ -1,4 +1,4 @@
-$app = Join-Path $PSScriptRoot 'dist\WorkflowConfigEditor.exe'
+$app = Join-Path $PSScriptRoot 'dist\AccessibleAIWorkflowConfigurate.exe'
 if (-not (Test-Path -LiteralPath $app)) {
     throw "Build missing: $app"
 }

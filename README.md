@@ -1,8 +1,8 @@
-# Workflow Config Editor
+# Accessible AI Workflow Configurate
 
 Keyboard accessible Windows editor for Codex, OpenCode, and CommandCode workflow settings. It resolves the current Windows user's profile at runtime, so the same EXE works for any user without embedding a developer account path.
 
-Run `Start-WorkflowConfigEditor.ps1`, or open `dist\WorkflowConfigEditor.exe` directly.
+Run `Start-WorkflowConfigEditor.ps1`, or open `dist\AccessibleAIWorkflowConfigurate.exe` directly.
 
 The window keeps a simple list-detail editor visible: choose a configuration, choose a workflow category, search for a setting, then edit its value. The known 19 categories remain visible with counts, and declared categories from a configuration are added automatically. `Start guided change` opens a category-by-category wizard. Each category asks the needed questions with `Back`, `Next`, and `Skip category`; the final question checks the current and new value before saving. Guided progress announces the category and question number. Booleans use checkboxes; known choices use radio buttons; free-form values use a text editor. `Review change`, `Save change`, `Make another change`, `Undo last change`, `Backups`, and `Reload` are available. Review shows the configuration, setting, current value, and pending value before saving. The current and pending values are shown together. After saving, the backup path and sync result are announced. Undo asks for confirmation, checks that the file was not changed externally, and restores the exact backup from that save. `Backups` lists valid backups newest first and restores a selected backup after confirmation, creating a recovery backup first. Every save checks for an external change, writes a timestamped backup, and keeps the five newest backups. Canonical agent instructions and taste files are synchronized through the existing shared scripts after saving.
 

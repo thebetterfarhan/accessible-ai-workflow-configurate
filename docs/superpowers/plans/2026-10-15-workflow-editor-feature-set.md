@@ -1,8 +1,8 @@
-# Workflow Config Editor Feature Set Implementation Plan
+# Accessible AI Workflow Configurate Feature Set Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Make the Workflow Config Editor friendly for new users by adding guided orientation, resumable category work, validation, summaries, safe presets, recovery history, health checks, and adjustable screen-reader guidance.
+**Goal:** Make Accessible AI Workflow Configurate friendly for new users by adding guided orientation, resumable category work, validation, summaries, safe presets, recovery history, health checks, and adjustable screen-reader guidance.
 
 **Architecture:** Keep the existing injected backend and persistent list-detail editor. Add small stateful helpers to `workflow_config_editor.py` for wizard state, summaries, presets, health checks, and accessibility copy; keep all writes behind the existing hash-checking save and backup paths. Extend smoke assertions rather than adding a new UI dependency.
 
@@ -17,7 +17,7 @@
 - Do not edit credentials, auth, caches, runtime history, or third-party provider defaults.
 - Use TDD: every behavior change has a failing smoke or backend test before implementation.
 - Commit each completed slice locally; do not push, create a PR, publish, or deploy.
-- Rebuild `dist\\WorkflowConfigEditor.exe` and run packaged `--smoke` after UI changes.
+- Rebuild `dist\\AccessibleAIWorkflowConfigurate.exe` and run packaged `--smoke` after UI changes.
 - Leave live NVDA speech/focus validation as an explicit manual gate.
 
 ## Review Focus
@@ -157,4 +157,3 @@
 - [ ] Rebuild the EXE and run packaged `--smoke`.
 - [ ] Perform live NVDA walkthrough for welcome, checklist, resume, validation, summary, presets, recovery, health check, and verbosity.
 - [ ] Commit documentation updates only after the walkthrough result is recorded.
-

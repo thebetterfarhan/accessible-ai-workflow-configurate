@@ -22,8 +22,7 @@ For a package check:
 
 ```powershell
 python -m PyInstaller --noconfirm --clean workflow_config_editor.spec
-dist\WorkflowConfigEditor.exe --smoke
+dist\AccessibleAIWorkflowConfigurate.exe --smoke
 ```
 
 Do not test by saving a real user configuration. Use fixture files. Never commit secrets, auth files, personal configuration values, generated binaries, or backup files.
-

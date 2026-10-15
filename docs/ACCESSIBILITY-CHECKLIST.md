@@ -1,6 +1,6 @@
 # NVDA verification checklist
 
-Use the packaged `dist\WorkflowConfigEditor.exe` with NVDA running. Do not save a value during this check.
+Use the packaged `dist\AccessibleAIWorkflowConfigurate.exe` with NVDA running. Do not save a value during this check.
 
 1. Start the editor. NVDA should announce the keyboard instructions, Help, and the current editor status.
    Activate `Welcome` and confirm the orientation is spoken. Toggle `Guidance: Detailed` to `Guidance: Short`; the instructions should become shorter without removing control names.

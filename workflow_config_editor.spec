@@ -15,4 +15,4 @@ a = Analysis(
     noarchive=False,
 )
 pyz = PYZ(a.pure)
-exe = EXE(pyz, a.scripts, a.binaries, a.datas, [], name="WorkflowConfigEditor", console=False)
+exe = EXE(pyz, a.scripts, a.binaries, a.datas, [], name="AccessibleAIWorkflowConfigurate", console=False)

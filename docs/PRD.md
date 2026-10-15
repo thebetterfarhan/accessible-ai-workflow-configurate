@@ -1,4 +1,4 @@
-# Workflow Config Editor PRD
+# Accessible AI Workflow Configurate PRD
 
 ## Status
 

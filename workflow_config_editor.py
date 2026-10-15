@@ -36,7 +36,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
     def __init__(self, backend: Any = None, parent: Any = None) -> None:
         if wx is None:
             raise RuntimeError("wxPython is required to run the configuration editor")
-        super().__init__(parent, title="Workflow configuration", size=(980, 700))
+        super().__init__(parent, title="Accessible AI Workflow Configurate", size=(980, 700))
         self.backend = backend or importlib.import_module("config_backend")
         self.files: list[Any] = []
         self.settings: list[Any] = []
@@ -1356,7 +1356,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         """Show short, screen-reader-friendly instructions for the persistent editor."""
         self._help_return_focus = wx.Window.FindFocus()
         message = (
-            "Workflow configuration help\n\n"
+            "Accessible AI Workflow Configurate help\n\n"
             "Choose a configuration, category, and setting. The editor stays visible while "
             "you change the value. Guided change walks through populated categories with Back, Next, "
             "and Skip category. Choose Save change when ready.\n\n"
@@ -1369,7 +1369,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
             "For shared workflow instructions, choose an AGENTS.md or taste file, choose a section, "
             "then replace the section body in the multiline editor. Generated TASTE sections are protected."
         )
-        dialog = wx.MessageDialog(self, message, "Workflow configuration help", wx.OK | wx.ICON_INFORMATION)
+        dialog = wx.MessageDialog(self, message, "Accessible AI Workflow Configurate help", wx.OK | wx.ICON_INFORMATION)
         try:
             dialog.ShowModal()
         finally:
@@ -1379,7 +1379,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
     def _on_welcome(self, _event: Any) -> None:
         self._help_return_focus = wx.Window.FindFocus()
         message = (
-            "Welcome to Workflow Config Editor.\n\n"
+            "Welcome to Accessible AI Workflow Configurate.\n\n"
             "For a first change, choose Start guided change. It explains each category, asks one question at a time, "
             "and uses Back, Next, and Skip category. Review the change before saving.\n\n"
             "You can also choose a configuration, category, and setting directly. F6 moves between panes. "
@@ -1464,7 +1464,7 @@ class _SaveSmokeBackend(_SmokeBackend):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Edit workflow configuration")
+    parser = argparse.ArgumentParser(description="Edit Accessible AI workflow configuration")
     parser.add_argument("--smoke", action="store_true", help="construct controls and exit without touching files")
     args = parser.parse_args()
     if args.smoke:
@@ -1485,6 +1485,7 @@ if __name__ == "__main__":
         frame.Show()
         wx.Yield()
         assert frame.step == 3
+        assert frame.GetTitle() == "Accessible AI Workflow Configurate"
         assert not frame.progress.IsShown()
         assert frame.guided_button.GetLabel() == "Start guided change"
         assert frame.status.GetLabel().startswith("New here")
