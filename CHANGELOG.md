@@ -5,6 +5,7 @@
 ### Added
 
 - MIT License for source and documentation.
+- Third-party notices for the bundled Node.js runtime and `jsonc-parser` dependency.
 - Guided setup wizard with category and question progress, Back, Next, Skip, pause, resume, validation, examples, and plain-language help.
 - All-sources inventory with source counts and direct source opening.
 - Whole-workflow health checks with unavailable-source reasons.

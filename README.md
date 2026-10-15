@@ -36,6 +36,8 @@ Current local release notes are in [`docs/RELEASE-NOTES.md`](docs/RELEASE-NOTES.
 
 Change history is in [`CHANGELOG.md`](CHANGELOG.md).
 
+Third-party license notices for the bundled Node runtime and JSONC parser are in [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md).
+
 ## System requirements
 
 - Windows 10 or Windows 11, 64-bit.

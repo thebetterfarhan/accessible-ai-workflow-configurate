@@ -52,7 +52,7 @@ Get-ChildItem .\dist\AccessibleAIWorkflowConfigurate-local.zip
 tar -tf .\dist\AccessibleAIWorkflowConfigurate-local.zip
 ```
 
-Confirm it contains the EXE and the user docs, and contains no source checkout, secrets, caches, or unrelated files. Record the ZIP SHA-256 too.
+Confirm it contains the EXE, the user docs, `THIRD-PARTY-NOTICES.md`, and the complete `third_party/` license directory, and contains no source checkout, secrets, caches, or unrelated files. Record the ZIP SHA-256 too.
 
 ## Documentation gate
 
@@ -61,6 +61,7 @@ Confirm it contains the EXE and the user docs, and contains no source checkout, 
 - Accessibility checklist states what was manually tested and what still needs NVDA.
 - Version and artifact hashes are recorded, or the candidate is explicitly marked `Unreleased`.
 - License and distribution status are stated. Confirm the `LICENSE` file is included before public distribution.
+- `THIRD-PARTY-NOTICES.md` and every file in `third_party/` match the bundled dependency versions.
 
 ## Manual NVDA gate
 
