@@ -51,6 +51,26 @@ class ConfigEditorFrame(wx.Frame if wx else object):
             "Hooks", "Agents", "Instructions", "Tools", "MCP", "Plugins", "Providers",
             "Routing", "Performance", "Output", "Accessibility", "Updates", "Other",
         ]
+        self._category_descriptions = {
+            "Model": "choose the AI model",
+            "Reasoning": "choose how much thinking to use",
+            "Sandbox": "choose computer access",
+            "Approval": "choose when to ask permission",
+            "Permissions": "choose which actions are allowed",
+            "Hooks": "choose automation triggers",
+            "Agents": "choose agent instructions",
+            "Instructions": "choose shared workflow instructions",
+            "Tools": "choose available tools",
+            "MCP": "choose connected services",
+            "Plugins": "choose installed extensions",
+            "Providers": "choose service providers",
+            "Routing": "choose how requests are routed",
+            "Performance": "choose speed and resource use",
+            "Output": "choose response formatting",
+            "Accessibility": "choose accessibility behavior",
+            "Updates": "choose update behavior",
+            "Other": "choose other workflow settings",
+        }
         self.categories = list(self._category_order)
         self.category_labels = list(self.categories)
         self._build_ui()
@@ -265,7 +285,8 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         available = [category for category in self._category_order[1:] if counts[category]]
         self.categories = ["All categories", *available]
         self.category_labels = [f"All settings ({len(self.settings)})"] + [
-            f"{category} ({counts[category]})" for category in available
+            f"{category}: {self._category_descriptions.get(category, 'choose settings')} ({counts[category]})"
+            for category in available
         ]
         if self.category not in self.categories:
             self.category = "All categories"
