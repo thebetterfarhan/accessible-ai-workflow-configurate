@@ -251,10 +251,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
             self.type_cue.SetLabel(f"Current type: {getattr(self.setting, 'value_type', 'text')}")
             self._make_value_control(self.setting)
             self._answer_control = self._controls[0]
-            self.answer_sizer.Clear(delete_windows=False)
-            self.answer_sizer.Add(self._answer_control, 0, wx.EXPAND | wx.ALL, 4)
-            self.answer_panel.Layout()
-            self._answer_control.SetFocus()
+            self._replace_answer(self._answer_control)
         else:
             if self.setting is None:
                 self._show_step(2)
