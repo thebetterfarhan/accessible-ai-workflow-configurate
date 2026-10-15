@@ -94,6 +94,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         panes = wx.BoxSizer(wx.HORIZONTAL)
         left = wx.Panel(panel)
         left.SetName("Configuration and categories")
+        left.SetMinSize((220, -1))
         left_sizer = wx.BoxSizer(wx.VERTICAL)
         config_label = wx.StaticText(left, label="Configuration")
         self.config_choice = wx.ComboBox(left, style=wx.CB_READONLY)
@@ -110,6 +111,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         left.SetSizer(left_sizer)
         middle = wx.Panel(panel)
         middle.SetName("Settings list")
+        middle.SetMinSize((300, -1))
         middle_sizer = wx.BoxSizer(wx.VERTICAL)
         middle_sizer.Add(wx.StaticText(middle, label="Settings"), 0, wx.BOTTOM, 3)
         self._setting_search = wx.TextCtrl(middle)
@@ -128,6 +130,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         middle.SetSizer(middle_sizer)
         right = wx.Panel(panel)
         right.SetName("Setting editor")
+        right.SetMinSize((320, -1))
         self.editor_panel = right
         editor = wx.BoxSizer(wx.VERTICAL)
         self.question = wx.StaticText(right, label="Select a setting")
