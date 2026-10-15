@@ -193,10 +193,14 @@ class ConfigEditorFrame(wx.Frame if wx else object):
 
     def _load_file(self, index: int) -> None:
         item = self.files[index]
+        file_changed = item != self.file
         try:
             self.settings, self.file_hash = self.backend.load_settings(item)
             self.file, self.setting, self.dirty = item, None, False
             self._draft_value = None
+            if file_changed:
+                self._last_backup = None
+                self.undo_button.Enable(False)
             self._derive_categories()
             self._set_status("Loaded")
         except Exception as exc:
@@ -769,6 +773,12 @@ if __name__ == "__main__":
         frame.dirty = False
         frame._on_reload(None)
         assert frame.step == 0
+        frame.files.append(_FallbackConfigFile("Second configuration", "<memory-2>", "smoke", "none"))
+        frame._last_backup = "previous-file-backup"
+        frame.undo_button.Enable(True)
+        frame._load_file(1)
+        assert frame._last_backup is None
+        assert not frame.undo_button.IsEnabled()
         frame.Destroy()
         app.Destroy()
         raise SystemExit(0)
