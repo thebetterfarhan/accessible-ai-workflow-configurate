@@ -2,7 +2,7 @@
 
 ## Status
 
-Working prototype. The local EXE is usable, but release readiness still needs a live NVDA walkthrough and a signed distribution decision.
+Safe interaction slices are implemented in the local EXE: guided mode, review-before-save, backup history, keyboard shortcuts, focus recovery, and empty-state guards. Release readiness still needs a live NVDA walkthrough and a signed distribution decision.
 
 ## Problem
 
