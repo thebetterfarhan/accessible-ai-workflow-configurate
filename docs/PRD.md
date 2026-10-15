@@ -89,6 +89,9 @@ Credentials, auth files, runtime history, state, and caches are excluded. Backup
 - `python -m pytest -q` passes.
 - Source and packaged smoke checks pass.
 - The EXE starts without an unhandled exception.
+- Guided mode provides orientation, category progress, pause/resume, validation before Next, explanations, summaries, presets, recent changes, and health checks.
+- Presets never write without an explicit review and save confirmation.
+- Health and recent-change views are read-only.
 - A fixture save preserves comments and rejects an external hash change.
 - A fixture undo restores the exact prior bytes and keeps a recovery backup.
 - Review-before-save shows the target, current value, and pending value before writing.
