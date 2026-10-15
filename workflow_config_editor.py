@@ -157,12 +157,14 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         panes.Add(right, 2, wx.EXPAND)
         outer.Add(panes, 1, wx.ALL | wx.EXPAND, 8)
         buttons = wx.BoxSizer(wx.HORIZONTAL)
+        self.review_button = wx.Button(panel, label="Review change")
         self.save_button = wx.Button(panel, label="Save change (Ctrl+S)")
         self.another_button = wx.Button(panel, label="Make another change")
         self.another_button.Enable(False)
         self.undo_button = wx.Button(panel, label="Undo last change")
         self.undo_button.Enable(False)
         self.reload_button = wx.Button(panel, label="Reload (F5)")
+        buttons.Add(self.review_button, 0, wx.RIGHT, 6)
         buttons.Add(self.save_button, 0, wx.RIGHT, 6)
         buttons.Add(self.another_button, 0, wx.RIGHT, 6)
         buttons.Add(self.undo_button, 0, wx.RIGHT, 6)
@@ -174,6 +176,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         outer.Add(self.status, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
         panel.SetSizer(outer)
 
+        self.review_button.Bind(wx.EVT_BUTTON, self._on_review)
         self.save_button.Bind(wx.EVT_BUTTON, self._on_save)
         self.another_button.Bind(wx.EVT_BUTTON, self._on_another_change)
         self.undo_button.Bind(wx.EVT_BUTTON, self._on_undo)
@@ -196,7 +199,13 @@ class ConfigEditorFrame(wx.Frame if wx else object):
             self.config_choice.SetSelection(self.files.index(self.file))
 
     def _on_category_choice(self, event: Any) -> None:
-        self.category = self.categories[event.GetSelection()]
+        index = event.GetSelection()
+        if self.dirty and not self._confirm_discard():
+            if self.category in self.categories:
+                self.category_list.SetSelection(self.categories.index(self.category))
+            self._set_status("Change cancelled. The pending value is still active.")
+            return
+        self.category = self.categories[index]
         self._draft_value = None
         self.setting = None
         self._populate_setting_choices()
@@ -611,6 +620,39 @@ class ConfigEditorFrame(wx.Frame if wx else object):
             return
         self.pending_label.SetLabel(f"Pending value: {self._typed_value()}")
 
+    def _review_text(self) -> str:
+        if self.file is None or self.setting is None or not self._controls:
+            return "Select a setting and enter a value before reviewing."
+        return (
+            f"Configuration: {self._file_name(self.file)}\n"
+            f"Setting: {self._setting_name(self.setting)}\n"
+            f"Current value: {getattr(self.setting, 'value', '')}\n"
+            f"Pending value: {self._typed_value()}\n\n"
+            "Choose Yes to save this change, or No to keep editing."
+        )
+
+    def _on_review(self, _event: Any) -> None:
+        if self.file is None or self.setting is None:
+            self._set_status("Select a setting first")
+            return
+        error = self._value_error()
+        if error:
+            self._set_status(error)
+            if self._controls:
+                self._controls[0].SetFocus()
+            return
+        dialog = wx.MessageDialog(self, self._review_text(), "Review change", wx.YES_NO | wx.ICON_QUESTION)
+        try:
+            confirmed = dialog.ShowModal() == wx.ID_YES
+        finally:
+            dialog.Destroy()
+        if confirmed:
+            self._on_save(None)
+        else:
+            self._set_status("Review cancelled. The pending value is still active.")
+            if self._controls:
+                self._controls[0].SetFocus()
+
     def _on_save(self, _event: Any) -> None:
         if self.file is None or self.setting is None:
             self._set_status("Select a setting first")
@@ -799,6 +841,16 @@ if __name__ == "__main__":
         assert frame.answer_panel.GetName() == "Value editor"
         frame._choose_setting(0)
         assert frame.status.GetLabel().startswith("Example setting selected")
+        review = frame._review_text()
+        assert "Current value: false" in review
+        assert "Pending value: false" in review
+        original_category = frame.category
+        frame.dirty = True
+        frame._confirm_discard = lambda: False
+        frame.category_list.SetSelection(1)
+        frame._on_category_choice(type("Event", (), {"GetSelection": lambda self: 1})())
+        assert frame.category == original_category
+        frame.dirty = False
         frame.category_list.SetFocus()
         frame._focus_pane()
         assert wx.Window.FindFocus() is frame._setting_search
