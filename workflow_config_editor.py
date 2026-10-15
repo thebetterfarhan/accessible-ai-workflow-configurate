@@ -628,6 +628,8 @@ class ConfigEditorFrame(wx.Frame if wx else object):
             self._set_status("Select a setting first")
             return
         if self.step != 4:
+            if self.step == 3 and self._controls:
+                self._draft_value = self._typed_value()
             self._show_step(4)
             self._set_status("Review the change, then choose Save this change.")
             return
@@ -793,6 +795,10 @@ if __name__ == "__main__":
         assert frame.step == 4
         frame._on_back(None)
         assert frame.step == 3
+        assert frame._answer_control.GetValue()
+        frame._on_save(None)
+        assert frame.step == 4
+        frame._on_back(None)
         assert frame._answer_control.GetValue()
         children = frame.answer_panel.GetChildren()
         assert len(children) == 1
