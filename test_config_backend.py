@@ -1,4 +1,4 @@
-import json, tempfile, os
+import json, tempfile, os, subprocess
 from pathlib import Path
 import config_backend as b
 
@@ -77,6 +77,54 @@ def test_restore_backup_rejects_wrong_file_and_stale_hash(tmp_path):
         assert False
     except RuntimeError:
         pass
+
+def test_restore_oldest_retained_backup_after_pruning(tmp_path):
+    p = tmp_path / 'x.json'; p.write_text('{"value": 0}\n', encoding='utf8')
+    f = b.ConfigFile('x', p, 'json')
+    setting, digest = b.load_settings(f)
+    for value in range(1, 7):
+        result = b.save_setting(f, setting[0], str(value), digest)
+        digest = b._sha(p.read_bytes())
+    backups = b.list_backups(f)
+    assert len(backups) == 5
+    selected = backups[-1]
+    selected_bytes = selected.read_bytes()
+    restored = b.restore_backup(f, selected, digest)
+    assert p.read_bytes() == selected_bytes
+    assert restored.backup_path.exists()
+
+def test_boolean_values_are_rejected_when_invalid(tmp_path):
+    p = tmp_path / 'x.toml'; p.write_text('enabled = true\n', encoding='utf8')
+    f = b.ConfigFile('x', p, 'toml')
+    setting, digest = b.load_settings(f)
+    try:
+        b.save_setting(f, setting[0], 'maybe', digest)
+        assert False
+    except ValueError:
+        pass
+
+def test_malformed_jsonc_is_rejected(tmp_path):
+    p = tmp_path / 'broken.jsonc'; p.write_text('{ "enabled": true,\n', encoding='utf8')
+    try:
+        b.load_settings(b.ConfigFile('broken', p, 'jsonc'))
+        assert False
+    except subprocess.CalledProcessError:
+        pass
+
+def test_discovery_uses_current_user_profile(monkeypatch, tmp_path):
+    config = tmp_path / '.codex'; config.mkdir()
+    (config / 'config.toml').write_text('enabled = true\n', encoding='utf8')
+    monkeypatch.setenv('USERPROFILE', str(tmp_path))
+    assert any(item.path == config / 'config.toml' for item in b.discover_files())
+
+def test_save_reports_sync_failure_after_file_save(tmp_path, monkeypatch):
+    p = tmp_path / 'AGENTS.md'; p.write_text('# Rules\nKeep backups.\n', encoding='utf8')
+    f = b.ConfigFile('AGENTS.md', p, 'markdown', 'agents')
+    settings, digest = b.load_settings(f)
+    monkeypatch.setattr(b, '_sync', lambda _kind: 'sync failed: test')
+    result = b.save_setting(f, settings[0], 'Use the keyboard.', digest)
+    assert 'sync failed' in result.sync_message
+    assert 'Use the keyboard.' in p.read_text(encoding='utf8')
 
 def test_list_backups_returns_only_matching_files_newest_first(tmp_path):
     target = tmp_path / 'x.json'

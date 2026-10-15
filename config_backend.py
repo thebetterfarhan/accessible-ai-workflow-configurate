@@ -18,8 +18,6 @@ def _user_home() -> Path:
     return Path(configured) if configured else Path.home()
 
 
-HOME = _user_home()
-
 CATEGORY_NAMES = (
     "Models", "Providers", "Routing", "Permissions", "Sandbox", "Workspace",
     "Hooks", "Profiles", "Agents", "Taste", "Tools", "Plugins", "MCP",
@@ -52,13 +50,14 @@ def _sha(data: bytes) -> str: return hashlib.sha256(data).hexdigest()
 def _read(p: Path) -> bytes: return p.read_bytes()
 
 def discover_files() -> list[ConfigFile]:
-    c = HOME / ".codex"; o = HOME / ".config" / "opencode"; cc = HOME / ".commandcode"
+    home = _user_home()
+    c = home / ".codex"; o = home / ".config" / "opencode"; cc = home / ".commandcode"
     out = []
     for p in [c / "config.toml", *sorted(c.glob("*.config.toml")), c / "hooks.json"]:
         if p.is_file(): out.append(ConfigFile(p.name, p, "toml" if p.suffix == ".toml" else "jsonc", ""))
     for p in [o / "opencode.jsonc", o / "opencode.json", cc / "settings.json", cc / "config.json"]:
         if p.is_file(): out.append(ConfigFile(p.name, p, "jsonc", ""))
-    a = HOME / ".codex" / "AGENTS.md"
+    a = home / ".codex" / "AGENTS.md"
     if a.is_file(): out.append(ConfigFile("Codex AGENTS.md", a, "markdown", "agents"))
     taste = cc / "taste"
     if taste.is_dir():
@@ -136,7 +135,11 @@ def save_setting(file: ConfigFile, setting: Setting, new_value: str, expected_sh
         doc=_parse_toml(file.path); cur=doc
         for k in setting.path[:-1]: cur=cur[k]
         old=cur[setting.path[-1]]
-        if setting.value_type=="boolean": new=new_value.lower() in ("true","1","yes","on")
+        if setting.value_type=="boolean":
+            normalized = new_value.strip().lower()
+            if normalized not in ("true", "1", "yes", "on", "false", "0", "no", "off"):
+                raise ValueError("boolean value must be true or false")
+            new = normalized in ("true", "1", "yes", "on")
         elif setting.value_type in ("number",): new=float(new_value) if "." in new_value else int(new_value)
         elif setting.value_type=="array": new=tomlkit.array(json.loads(new_value))
         else: new=new_value
@@ -165,11 +168,12 @@ def restore_backup(file: ConfigFile, backup_path: Path | str, expected_sha256: s
     raw = _read(target)
     if _sha(raw) != expected_sha256:
         raise RuntimeError("external change detected; reload before restoring")
+    selected_bytes = backup.read_bytes()
     current_backup = _backup(target)
     fd, tmp = tempfile.mkstemp(dir=target.parent, prefix=".workflow-restore-")
     os.close(fd)
     try:
-        shutil.copyfile(backup, tmp)
+        Path(tmp).write_bytes(selected_bytes)
         os.replace(tmp, target)
     finally:
         if os.path.exists(tmp): os.unlink(tmp)
@@ -191,10 +195,10 @@ def _markdown_save(text, setting, value, kind):
 
 def _sync(kind):
     if not kind: return ""
-    script=HOME/"Documents"/"Codex"/"tools"/("sync-agent-instructions.ps1" if kind=="agents" else "sync-taste.ps1")
+    script=_user_home()/"Documents"/"Codex"/"tools"/("sync-agent-instructions.ps1" if kind=="agents" else "sync-taste.ps1")
     if not script.is_file(): return "sync script unavailable"
     r=subprocess.run(["powershell","-NoProfile","-File",str(script)],capture_output=True,text=True)
-    if r.returncode: raise RuntimeError("sync failed: "+r.stderr.strip())
+    if r.returncode: return "sync failed: " + (r.stderr.strip() or "the synchronization script returned an error")
     return "synchronized"
 
 def _node() -> str:

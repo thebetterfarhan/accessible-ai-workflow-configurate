@@ -102,6 +102,9 @@ Credentials, auth files, runtime history, state, and caches are excluded. Backup
 - A fixture undo restores the exact prior bytes and keeps a recovery backup.
 - Review-before-save shows the target, current value, and pending value before writing.
 - Backup history lists valid backups newest first and restores only after confirmation.
+- Restoring the oldest retained backup works when the five-backup limit is full.
+- Malformed JSONC and invalid boolean values are rejected before writing.
+- A synchronization failure is reported as a warning after the edited file has been safely saved.
 - Guided mode announces the four configuration questions and uses the same safe save path.
 - A live NVDA walkthrough completes configuration, category, setting, edit, and save actions without focus loss.
 

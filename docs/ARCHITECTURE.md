@@ -22,6 +22,8 @@ The source inventory reparses discovered files only to count editable settings. 
 
 The backend resolves the current Windows user's profile from `USERPROFILE`, falling back to `Path.home()`. It never reads credentials or runtime state as editable settings.
 
+Backup restoration reads the selected backup before retention pruning, so the oldest retained backup remains restorable. JSONC parse errors and invalid typed values fail before a write; instruction synchronization is reported separately after the file write.
+
 ## Verification
 
 Fixture tests cover JSON/JSONC round trips, TOML comment preservation, hash guards, category grouping, current-user resolution, backup retention, and undo. The GUI has a no-write `--smoke` path. Packaging must be followed by both packaged smoke and normal-startup checks.

@@ -252,6 +252,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         self._guided_changes: list[dict[str, str]] = []
         self._preset_pending: list[tuple[Any, str]] = []
         self._recent_changes: list[dict[str, str]] = []
+        self._inventory_counts: dict[Any, tuple[int, Optional[str]]] = {}
         self._guided_phase: Optional[str] = None
         self._guided_categories: list[str] = []
         self._guided_category_pos = 0
@@ -453,13 +454,24 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         rows: list[dict[str, Any]] = []
         for item in self.files:
             try:
-                settings = self.settings if item is self.file else self.backend.load_settings(item)[0]
+                if item is self.file:
+                    settings = self.settings
+                    self._inventory_counts[item] = (len(settings), None)
+                elif item in self._inventory_counts:
+                    count, error = self._inventory_counts[item]
+                    if error:
+                        raise RuntimeError(error)
+                    settings = [None] * count
+                else:
+                    settings = self.backend.load_settings(item)[0]
+                    self._inventory_counts[item] = (len(settings), None)
                 rows.append({
                     "name": self._file_name(item),
                     "kind": str(getattr(item, "kind", "")),
                     "count": len(settings),
                 })
             except Exception as exc:
+                self._inventory_counts[item] = (0, type(exc).__name__)
                 rows.append({
                     "name": self._file_name(item),
                     "kind": str(getattr(item, "kind", "")),
@@ -790,6 +802,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
 
     def _discover(self) -> None:
         try:
+            self._inventory_counts = {}
             self.files = list(self.backend.discover_files())
             if self.files:
                 self.save_button.Enable(True)
@@ -825,6 +838,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         file_changed = item != self.file
         try:
             self.settings, self.file_hash = self.backend.load_settings(item)
+            self._inventory_counts[item] = (len(self.settings), None)
             self.file, self.setting, self.dirty = item, None, False
             self._draft_value = None
             self._preset_pending = []
