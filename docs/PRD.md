@@ -18,7 +18,7 @@ Codex, OpenCode, and CommandCode keep workflow behavior in different TOML, JSON,
 
 1. Let a user change one workflow setting through a persistent list-detail editor.
 2. Use clear questions and native controls: radio choices, checkboxes, and text fields.
-3. Group settings into understandable categories and hide empty categories.
+3. Group settings into understandable categories and show all 19 categories with counts, including empty categories.
 4. Preserve comments and formatting in TOML and JSONC files.
 5. Prevent silent data loss with hash checks, atomic writes, timestamped backups, and undo.
 6. Work for the current Windows user without embedding a developer account path.

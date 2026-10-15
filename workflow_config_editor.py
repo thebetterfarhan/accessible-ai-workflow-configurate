@@ -49,7 +49,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         self._category_order = [
             "All categories", "Model", "Reasoning", "Sandbox", "Approval", "Permissions",
             "Hooks", "Agents", "Instructions", "Tools", "MCP", "Plugins", "Providers",
-            "Routing", "Performance", "Output", "Accessibility", "Updates", "Other",
+            "Routing", "Performance", "Output", "Accessibility", "Updates", "Workspace", "Other",
         ]
         self._category_descriptions = {
             "Model": "choose the AI model",
@@ -69,6 +69,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
             "Output": "choose response formatting",
             "Accessibility": "choose accessibility behavior",
             "Updates": "choose update behavior",
+            "Workspace": "choose workspace behavior",
             "Other": "choose other workflow settings",
         }
         self.categories = list(self._category_order)
@@ -406,10 +407,10 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         counts = {category: 0 for category in self._category_order[1:]}
         for setting in self.settings:
             counts[self._setting_category(setting)] += 1
-        available = [category for category in self._category_order[1:] if counts[category]]
+        available = list(self._category_order[1:])
         self.categories = ["All categories", *available]
         self.category_labels = [f"All settings ({len(self.settings)})"] + [
-            f"{category}: {self._category_descriptions.get(category, 'choose settings')} ({counts[category]})"
+            f"{category}: {self._category_descriptions.get(category, 'choose settings')} ({counts[category]} settings)"
             for category in available
         ]
         if self.category not in self.categories:
@@ -523,6 +524,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
             "permission": "Permissions", "hook": "Hooks", "agent": "Agents", "instruction": "Instructions",
             "tool": "Tools", "mcp": "MCP", "plugin": "Plugins", "provider": "Providers", "route": "Routing",
             "performance": "Performance", "output": "Output", "access": "Accessibility", "update": "Updates",
+            "workspace": "Workspace",
         }
         for key, category in aliases.items():
             if key in text:
@@ -956,7 +958,8 @@ if __name__ == "__main__":
         frame._load_file(0)
         assert frame.status.GetLabel().startswith("Loaded Smoke configuration")
         frame._refresh_lists()
-        assert frame.category_list.GetCount() == 2
+        assert frame.category_list.GetCount() == 20
+        assert any("Sandbox" in frame.category_list.GetString(i) and "(0 settings)" in frame.category_list.GetString(i) for i in range(frame.category_list.GetCount()))
         assert frame._setting_list.GetCount() == 1
         assert frame.answer_panel.GetName() == "Value editor"
         frame._start_guided(None)
