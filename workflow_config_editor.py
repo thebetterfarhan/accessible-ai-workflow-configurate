@@ -80,77 +80,146 @@ class ConfigEditorFrame(wx.Frame if wx else object):
     def _build_ui(self) -> None:
         panel = wx.Panel(self)
         outer = wx.BoxSizer(wx.VERTICAL)
-        instructions = wx.StaticText(panel, label="Answer one question at a time. Tab moves forward. Shift+Tab moves back. Enter chooses. Ctrl+S saves.")
+        instructions = wx.StaticText(panel, label="Choose a configuration, category, and setting. Edit the value, then choose Save change. F6 moves between panes.")
         instructions.SetName("Keyboard instructions")
         instructions.Wrap(940)
         outer.Add(instructions, 0, wx.ALL | wx.EXPAND, 8)
         self.help_button = wx.Button(panel, label="Help (F1)")
         self.help_button.SetName("Help")
-        self.help_button.SetToolTip("Read keyboard and wizard instructions")
+        self.help_button.SetToolTip("Read keyboard and editor instructions")
         outer.Add(self.help_button, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
-        self.progress = wx.StaticText(panel, label="Question 1 of 5")
-        self.progress.SetName("Wizard progress")
+        self.progress = wx.StaticText(panel, label="Ready")
+        self.progress.SetName("Editor status")
         outer.Add(self.progress, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
-        self.question = wx.StaticText(panel, label="Which configuration do you want to edit?")
-        self.question.SetName("Question")
-        self.question.Wrap(900)
-        outer.Add(self.question, 0, wx.ALL | wx.EXPAND, 8)
-        self.answer_panel = wx.Panel(panel)
+        panes = wx.BoxSizer(wx.HORIZONTAL)
+        left = wx.Panel(panel)
+        left_sizer = wx.BoxSizer(wx.VERTICAL)
+        config_label = wx.StaticText(left, label="Configuration")
+        self.config_choice = wx.ComboBox(left, style=wx.CB_READONLY)
+        self.config_choice.SetName("Configuration")
+        self.config_choice.Bind(wx.EVT_COMBOBOX, self._on_config_choice)
+        category_label = wx.StaticText(left, label="Categories")
+        self.category_list = wx.ListBox(left, style=wx.LB_SINGLE)
+        self.category_list.SetName("Categories")
+        self.category_list.Bind(wx.EVT_LISTBOX, self._on_category_choice)
+        left_sizer.Add(config_label, 0, wx.BOTTOM, 3)
+        left_sizer.Add(self.config_choice, 0, wx.EXPAND | wx.BOTTOM, 10)
+        left_sizer.Add(category_label, 0, wx.BOTTOM, 3)
+        left_sizer.Add(self.category_list, 1, wx.EXPAND)
+        left.SetSizer(left_sizer)
+        middle = wx.Panel(panel)
+        middle_sizer = wx.BoxSizer(wx.VERTICAL)
+        middle_sizer.Add(wx.StaticText(middle, label="Settings"), 0, wx.BOTTOM, 3)
+        self._setting_search = wx.TextCtrl(middle)
+        self._setting_search.SetName("Search settings")
+        self._setting_search.SetHint("Type part of a setting name")
+        self._setting_search.Bind(wx.EVT_TEXT, self._on_setting_search)
+        middle_sizer.Add(self._setting_search, 0, wx.EXPAND | wx.BOTTOM, 6)
+        self._setting_list = wx.ListBox(middle, style=wx.LB_SINGLE)
+        self._setting_list.SetName("Settings")
+        self._setting_list.Bind(wx.EVT_LISTBOX, lambda e: self._choose_setting(e.GetSelection()) or self._refresh_detail())
+        middle_sizer.Add(self._setting_list, 1, wx.EXPAND)
+        self._setting_empty_message = wx.StaticText(middle, label="")
+        self._setting_empty_message.SetName("Setting search result")
+        self._setting_empty_message.Wrap(360)
+        middle_sizer.Add(self._setting_empty_message, 0, wx.EXPAND | wx.TOP, 8)
+        middle.SetSizer(middle_sizer)
+        right = wx.Panel(panel)
+        editor = wx.BoxSizer(wx.VERTICAL)
+        self.question = wx.StaticText(right, label="Select a setting")
+        self.question.SetName("Setting question")
+        self.question.Wrap(420)
+        editor.Add(self.question, 0, wx.BOTTOM, 8)
+        self.setting_label = wx.StaticText(right, label="")
+        self.setting_label.SetName("Setting name")
+        editor.Add(self.setting_label, 0, wx.BOTTOM, 4)
+        self.type_cue = wx.StaticText(right, label="")
+        self.type_cue.SetName("Setting type")
+        editor.Add(self.type_cue, 0, wx.BOTTOM, 4)
+        self.pending_label = wx.StaticText(right, label="")
+        self.pending_label.SetName("Pending value")
+        editor.Add(self.pending_label, 0, wx.BOTTOM, 8)
+        self.answer_panel = wx.Panel(right)
         self.answer_sizer = wx.BoxSizer(wx.VERTICAL)
         self.answer_panel.SetSizer(self.answer_sizer)
-        outer.Add(self.answer_panel, 1, wx.ALL | wx.EXPAND, 8)
-        editor = wx.BoxSizer(wx.VERTICAL)
-        self.setting_label = wx.StaticText(panel, label="")
-        editor.Add(self.setting_label, 0, wx.BOTTOM, 4)
-        self.type_cue = wx.StaticText(panel, label="")
-        editor.Add(self.type_cue, 0, wx.BOTTOM, 4)
-        self.value_panel = wx.Panel(panel)
-        self.value_sizer = wx.BoxSizer(wx.VERTICAL)
-        self.value_panel.SetSizer(self.value_sizer)
-        self.value = wx.TextCtrl(self.value_panel, style=wx.TE_MULTILINE | wx.TE_PROCESS_ENTER, size=(-1, 130))
-        self.value.SetName("Current value")
-        self.value_sizer.Add(self.value, 1, wx.EXPAND)
-        self._controls = [self.value]
-        self.value_panel.Hide()
-        editor.Add(self.value_panel, 1, wx.EXPAND | wx.BOTTOM, 6)
+        editor.Add(self.answer_panel, 1, wx.EXPAND)
+        right.SetSizer(editor)
+        panes.Add(left, 1, wx.EXPAND | wx.RIGHT, 8)
+        panes.Add(middle, 1, wx.EXPAND | wx.RIGHT, 8)
+        panes.Add(right, 2, wx.EXPAND)
+        outer.Add(panes, 1, wx.ALL | wx.EXPAND, 8)
         buttons = wx.BoxSizer(wx.HORIZONTAL)
-        self.back_button = wx.Button(panel, label="Back")
-        self.next_button = wx.Button(panel, label="Next")
-        self.save_button = wx.Button(panel, label="Save (Ctrl+S)")
+        self.save_button = wx.Button(panel, label="Save change (Ctrl+S)")
         self.another_button = wx.Button(panel, label="Make another change")
         self.another_button.Enable(False)
         self.undo_button = wx.Button(panel, label="Undo last change")
         self.undo_button.Enable(False)
         self.reload_button = wx.Button(panel, label="Reload (F5)")
-        buttons.Add(self.back_button, 0, wx.RIGHT, 6)
-        buttons.Add(self.next_button, 0, wx.RIGHT, 12)
         buttons.Add(self.save_button, 0, wx.RIGHT, 6)
         buttons.Add(self.another_button, 0, wx.RIGHT, 6)
         buttons.Add(self.undo_button, 0, wx.RIGHT, 6)
         buttons.Add(self.reload_button, 0)
-        editor.Add(buttons, 0, wx.BOTTOM, 4)
-        outer.Add(editor, 0, wx.ALL | wx.EXPAND, 8)
+        outer.Add(buttons, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
         self.status = wx.StaticText(panel, label="Ready")
         self.status.SetName("Status")
         self.status.SetForegroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_WINDOWTEXT))
         outer.Add(self.status, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
         panel.SetSizer(outer)
 
-        self.back_button.Bind(wx.EVT_BUTTON, self._on_back)
-        self.next_button.Bind(wx.EVT_BUTTON, self._on_next)
         self.save_button.Bind(wx.EVT_BUTTON, self._on_save)
         self.another_button.Bind(wx.EVT_BUTTON, self._on_another_change)
         self.undo_button.Bind(wx.EVT_BUTTON, self._on_undo)
         self.reload_button.Bind(wx.EVT_BUTTON, self._on_reload)
         self.help_button.Bind(wx.EVT_BUTTON, self._on_help)
         self.Bind(wx.EVT_CLOSE, self._on_close)
-        self.step = 0
+        self.step = 3
         self._answer_control = None
         self._radio_values: list[str] = []
         self._draft_value: Optional[str] = None
 
     def _bind_keys(self) -> None:
         self.Bind(wx.EVT_CHAR_HOOK, self._on_key)
+
+    def _on_config_choice(self, event: Any) -> None:
+        if self._confirm_discard():
+            self._load_file(event.GetSelection())
+            self._refresh_lists()
+        elif self.file in self.files:
+            self.config_choice.SetSelection(self.files.index(self.file))
+
+    def _on_category_choice(self, event: Any) -> None:
+        self.category = self.categories[event.GetSelection()]
+        self._draft_value = None
+        self.setting = None
+        self._populate_setting_choices()
+        self._refresh_detail()
+
+    def _refresh_lists(self) -> None:
+        self.config_choice.Set([self._file_name(item) for item in self.files])
+        if self.file in self.files:
+            self.config_choice.SetSelection(self.files.index(self.file))
+        self.category_list.Set(self.category_labels)
+        if self.category in self.categories:
+            self.category_list.SetSelection(self.categories.index(self.category))
+        self._populate_setting_choices()
+        self._refresh_detail()
+
+    def _refresh_detail(self) -> None:
+        if self.setting is None:
+            self.question.SetLabel("Select a setting")
+            self.setting_label.SetLabel("")
+            self.type_cue.SetLabel("")
+            self.pending_label.SetLabel("")
+            self._replace_answer(wx.StaticText(self.answer_panel, label="Choose a setting from the list."))
+            self._answer_control = None
+            return
+        name = self._setting_name(self.setting)
+        self.question.SetLabel(f"Edit {name}")
+        self.setting_label.SetLabel(f"Current value: {getattr(self.setting, 'value', '')}")
+        self.type_cue.SetLabel(f"Type: {getattr(self.setting, 'value_type', 'text')}")
+        self._make_value_control(self.setting)
+        self._replace_answer(self._controls[0])
+        self._update_pending_label()
 
     def _on_key(self, event: Any) -> None:
         key = event.GetKeyCode()
@@ -159,20 +228,20 @@ class ConfigEditorFrame(wx.Frame if wx else object):
             self._on_save(event)
         elif key == wx.WXK_F1:
             self._on_help(event)
-        elif key == wx.WXK_ESCAPE and self.step == 2 and source is getattr(self, "_setting_search", None):
+        elif key == wx.WXK_ESCAPE and source is getattr(self, "_setting_search", None):
             if self._setting_search.GetValue():
                 self._setting_search.ChangeValue("")
                 self._on_setting_search(None)
                 self._set_status("Search cleared. Choose a setting, then press Enter.")
             else:
                 event.Skip()
+        elif key == wx.WXK_F6:
+            self._focus_pane(event.ShiftDown())
         elif key in (wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER):
-            setting_step_control = self.step == 2 and (
-                source is getattr(self, "_setting_search", None)
-                or source is getattr(self, "_setting_list", None)
-            )
-            if source is self._answer_control or setting_step_control:
-                self._on_next(event)
+            if source is self._setting_search and self._visible_settings:
+                self._setting_list.SetFocus()
+            elif source is self._setting_list and self.setting is not None:
+                self._refresh_detail()
             else:
                 event.Skip()
         elif key == wx.WXK_F5:
@@ -180,14 +249,26 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         else:
             event.Skip()
 
+    def _focus_pane(self, reverse: bool = False) -> None:
+        """Move focus among the persistent editor panes with F6."""
+        panes = [self.config_choice, self.category_list, self._setting_search, self._answer_control]
+        panes = [control for control in panes if control is not None and control.IsShown() and control.IsEnabled()]
+        if not panes:
+            return
+        focused = wx.Window.FindFocus()
+        try:
+            index = next(index for index, control in enumerate(panes) if focused is control)
+        except StopIteration:
+            index = 0 if reverse else -1
+        panes[(index - 1 if reverse else index + 1) % len(panes)].SetFocus()
+
     def _discover(self) -> None:
         try:
             self.files = list(self.backend.discover_files())
             if self.files:
-                self.next_button.Enable(True)
                 self.save_button.Enable(True)
                 self._load_file(0)
-                self._show_step(0)
+                self._refresh_lists()
             else:
                 self._show_unavailable("No configuration files found")
         except Exception as exc:
@@ -196,8 +277,6 @@ class ConfigEditorFrame(wx.Frame if wx else object):
     def _show_unavailable(self, message: str) -> None:
         """Keep an empty discovery state actionable through Reload only."""
         self.question.SetLabel(message)
-        self.back_button.Enable(False)
-        self.next_button.Enable(False)
         self.save_button.Enable(False)
         self.another_button.Enable(False)
         self.undo_button.Enable(False)
@@ -233,91 +312,9 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         self.answer_panel.Layout()
         control.SetFocus()
 
-    def _show_step(self, step: int) -> None:
-        self.step = max(0, min(4, step))
-        self.progress.SetLabel(f"Question {self.step + 1} of 5")
-        self.back_button.Enable(self.step > 0)
-        self.next_button.SetLabel("Save this change" if self.step == 4 else ("Review change" if self.step == 3 else "Next"))
-        if self.step == 0:
-            self.question.SetLabel("Which configuration do you want to edit?")
-            control = wx.RadioBox(self.answer_panel, label="Choose a configuration", choices=[self._file_name(f) for f in self.files], majorDimension=1, style=wx.RA_SPECIFY_ROWS)
-            control.SetName("Configuration choice")
-            control.SetSelection(self.files.index(self.file) if self.file in self.files else 0)
-            control.Bind(wx.EVT_RADIOBOX, lambda e: self._load_file(e.GetSelection()))
-            self._replace_answer(control)
-        elif self.step == 1:
-            self.question.SetLabel("Which area of the workflow do you want to change?")
-            control = wx.RadioBox(self.answer_panel, label="Choose a category", choices=self.category_labels, majorDimension=1, style=wx.RA_SPECIFY_ROWS)
-            control.SetName("Workflow category")
-            control.SetSelection(self.categories.index(self.category))
-            control.Bind(wx.EVT_RADIOBOX, lambda e: self._set_category(e.GetSelection()))
-            self._replace_answer(control)
-        elif self.step == 2:
-            self.question.SetLabel("Which setting do you want to change?")
-            container = wx.Panel(self.answer_panel)
-            container_sizer = wx.BoxSizer(wx.VERTICAL)
-            search_label = wx.StaticText(container, label="Search settings (optional)")
-            search_label.SetName("Setting search label")
-            search = wx.TextCtrl(container)
-            search.SetName("Search settings")
-            search.SetHint("Type part of a setting name")
-            control = wx.ListBox(container, style=wx.LB_SINGLE)
-            control.SetName("Workflow setting")
-            empty_message = wx.StaticText(container, label="")
-            empty_message.SetName("Setting search result")
-            empty_message.Wrap(880)
-            container_sizer.Add(search_label, 0, wx.EXPAND | wx.BOTTOM, 3)
-            container_sizer.Add(search, 0, wx.EXPAND | wx.BOTTOM, 6)
-            container_sizer.Add(control, 1, wx.EXPAND)
-            container_sizer.Add(empty_message, 0, wx.EXPAND | wx.TOP, 8)
-            container.SetSizer(container_sizer)
-            self._visible_settings = self._filtered()
-            self._setting_search = search
-            self._setting_list = control
-            self._setting_empty_message = empty_message
-            self._populate_setting_choices()
-            search.Bind(wx.EVT_TEXT, self._on_setting_search)
-            control.Bind(wx.EVT_LISTBOX, lambda e: self._choose_setting(e.GetSelection()))
-            self._replace_answer(container)
-            search.SetFocus()
-        elif self.step == 3:
-            if self.setting is None:
-                self._show_step(2)
-                return
-            self.question.SetLabel(f"How should I set {self._setting_name(self.setting)}?")
-            self.setting_label.SetLabel(self._setting_name(self.setting))
-            self.type_cue.SetLabel(f"Current type: {getattr(self.setting, 'value_type', 'text')}")
-            self._make_value_control(self.setting)
-            self._answer_control = self._controls[0]
-            self._replace_answer(self._answer_control)
-        else:
-            if self.setting is None:
-                self._show_step(2)
-                return
-            name = self._setting_name(self.setting)
-            current = str(getattr(self.setting, "value", ""))
-            proposed = self._typed_value()
-            self.question.SetLabel("Please review this change before saving.")
-            review = wx.Panel(self.answer_panel)
-            sizer = wx.BoxSizer(wx.VERTICAL)
-            for label, value in (("Setting", name), ("Current value", current), ("New value", proposed)):
-                text = wx.StaticText(review, label=f"{label}: {value}")
-                text.SetName(label)
-                text.Wrap(880)
-                sizer.Add(text, 0, wx.EXPAND | wx.BOTTOM, 10)
-            hint = wx.StaticText(review, label="Choose Save this change to write it, or Back to edit it.")
-            hint.SetName("Review instructions")
-            hint.Wrap(880)
-            sizer.Add(hint, 0, wx.EXPAND | wx.BOTTOM, 10)
-            review.SetSizer(sizer)
-            self._replace_answer(review)
-            self._answer_control = review
-        self._set_status("Use arrow keys to choose. Press Tab for the next button.")
-
     def _set_category(self, index: int) -> None:
         self.category = self.categories[index]
         self._draft_value = None
-
     def _derive_categories(self) -> None:
         """Keep only categories represented by this file and show their counts."""
         counts = {category: 0 for category in self._category_order[1:]}
@@ -358,11 +355,10 @@ class ConfigEditorFrame(wx.Frame if wx else object):
 
     def _update_setting_step_state(self) -> None:
         """Keep progression and the spoken empty state aligned with search results."""
-        if self.step != 2 or not hasattr(self, "_setting_list"):
+        if not hasattr(self, "_setting_list"):
             return
         count = len(self._visible_settings)
         has_results = count > 0
-        self.next_button.Enable(has_results)
         self._setting_list.Enable(has_results)
         empty_message = getattr(self, "_setting_empty_message", None)
         if empty_message is not None:
@@ -372,9 +368,9 @@ class ConfigEditorFrame(wx.Frame if wx else object):
             else:
                 query = self._setting_search.GetValue().strip()
                 if query:
-                    message = f"No settings match {query}. Clear the search or Tab to Back, then press Enter to choose another category."
+                    message = f"No settings match {query}. Clear the search or choose another category."
                 else:
-                    message = "This category has no settings. Tab to Back, then press Enter to choose another category."
+                    message = "This category has no settings. Choose another category."
                 empty_message.SetLabel(message)
                 empty_message.Show()
             self.answer_panel.Layout()
@@ -386,28 +382,6 @@ class ConfigEditorFrame(wx.Frame if wx else object):
             self._set_status(f"{count} setting{'s' if count != 1 else ''} found. Tab to choose a setting.")
         else:
             self._set_status("No matching settings. Clear the search or go back to choose another category.")
-
-    def _on_back(self, _event: Any) -> None:
-        self._show_step(self.step - 1)
-
-    def _on_next(self, _event: Any) -> None:
-        if self.step == 0 and self._answer_control is not None:
-            self._load_file(self._answer_control.GetSelection())
-        if self.step == 2 and self.setting is None:
-            self._set_status("Choose a setting first")
-            return
-        if self.step == 3:
-            error = self._value_error()
-            if error:
-                self._set_status(error)
-                if self._controls:
-                    self._controls[0].SetFocus()
-                return
-            self._draft_value = self._typed_value()
-        if self.step == 4:
-            self._on_save(_event)
-            return
-        self._show_step(self.step + 1)
 
     def _value_error(self) -> Optional[str]:
         """Return a spoken correction, or None when the answer is usable."""
@@ -544,9 +518,6 @@ class ConfigEditorFrame(wx.Frame if wx else object):
                 control.SetName(f"{label} value")
                 control.Bind(wx.EVT_TEXT, self._on_value)
                 self._controls = [control]
-        self.value_sizer.Clear(delete_windows=False)
-        self.value_panel.Layout()
-        self.value = self._controls[0]
         # Keep focus where the user made the selection. NVDA otherwise jumps from
         # the list into a recreated control after every arrow key.
 
@@ -596,29 +567,39 @@ class ConfigEditorFrame(wx.Frame if wx else object):
     def _on_typed_value(self, _event: Any) -> None:
         if self.setting is not None:
             self.dirty = self._typed_value() != str(getattr(self.setting, "value", ""))
+            self._update_pending_label()
 
     def _on_value(self, _event: Any) -> None:
         if self.setting is not None:
             self.dirty = self._typed_value() != str(getattr(self.setting, "value", ""))
+            self._update_pending_label()
+
+    def _update_pending_label(self) -> None:
+        if self.setting is None or not self._controls:
+            self.pending_label.SetLabel("")
+            return
+        self.pending_label.SetLabel(f"Pending value: {self._typed_value()}")
 
     def _on_save(self, _event: Any) -> None:
         if self.file is None or self.setting is None:
             self._set_status("Select a setting first")
             return
-        if self.step != 4:
-            if self.step == 3 and self._controls:
-                self._draft_value = self._typed_value()
-            self._show_step(4)
-            self._set_status("Review the change, then choose Save this change.")
-            return
         try:
-            result = self.backend.save_setting(self.file, self.setting, self._typed_value(), self.file_hash)
+            error = self._value_error()
+            if error:
+                self._set_status(error)
+                if self._controls:
+                    self._controls[0].SetFocus()
+                return
+            proposed = self._draft_value if self._draft_value is not None else self._typed_value()
+            result = self.backend.save_setting(self.file, self.setting, proposed, self.file_hash)
             self.file_hash = getattr(result, "sha256", None) or self._hash_after_save(result)
             self.dirty = False
             self._draft_value = None
             backup = getattr(result, "backup_path", None)
             self._last_backup = backup
             self._load_file(self.files.index(self.file))
+            self._refresh_lists()
             backup_text = f" Backup: {backup}." if backup else ""
             sync_text = str(getattr(result, "sync_message", "")).strip()
             self._set_status(f"Saved.{backup_text} {sync_text}".strip())
@@ -631,8 +612,11 @@ class ConfigEditorFrame(wx.Frame if wx else object):
     def _on_another_change(self, _event: Any) -> None:
         """Start a fresh guided change after a completed save."""
         self.another_button.Enable(False)
-        self._show_step(1)
-        self._set_status("Choose the area for your next change.")
+        self.setting = None
+        self._draft_value = None
+        self._refresh_lists()
+        self.category_list.SetFocus()
+        self._set_status("Choose a category for your next change.")
 
     def _on_undo(self, _event: Any) -> None:
         """Restore the backup from the most recent successful save."""
@@ -661,6 +645,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
             self._last_backup = None
             self.undo_button.Enable(False)
             self._load_file(self.files.index(self.file))
+            self._refresh_lists()
             sync_text = str(getattr(result, "sync_message", "")).strip()
             self._set_status(f"Last change undone. {sync_text}".strip())
             self.another_button.SetFocus()
@@ -679,19 +664,18 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         if not self._confirm_discard():
             return
         self._load_file(self.files.index(self.file))
-        self._show_step(0)
-        self._set_status("Reloaded. Choose a configuration.")
+        self._refresh_lists()
+        self._set_status("Reloaded. Choose a setting.")
 
     def _on_help(self, _event: Any) -> None:
-        """Show short, screen-reader-friendly instructions without changing the wizard."""
+        """Show short, screen-reader-friendly instructions for the persistent editor."""
         message = (
             "Workflow configuration help\n\n"
-            "This wizard asks one question at a time. Choose a configuration, "
-            "an area, a setting, and its new value. Then review the change before saving.\n\n"
-            "Keyboard: Tab moves forward. Shift+Tab moves back. Arrow keys choose a radio "
-            "button. Enter activates the focused choice. Escape clears a setting search. "
-            "F1 opens this help. F5 reloads. "
-            "Control plus S opens the review or saves after review.\n\n"
+            "Choose a configuration, category, and setting. The editor stays visible while "
+            "you change the value. Choose Save change when ready.\n\n"
+            "Keyboard: Tab moves through controls. F6 moves between configuration, category, "
+            "settings, and editor panes. Arrow keys choose list items. Enter selects a setting. "
+            "Escape clears the setting search. F1 opens this help. F5 reloads. Ctrl+S saves.\n\n"
             "Saving creates a backup. After saving, choose Make another change to continue, "
             "or Undo last change to restore the previous value."
         )
@@ -746,6 +730,15 @@ class _EmptySmokeBackend(_SmokeBackend):
         return []
 
 
+class _SaveSmokeBackend(_SmokeBackend):
+    def __init__(self) -> None:
+        self.saved_value = None
+
+    def save_setting(self, _file: Any, _setting: Any, value: str, _expected: str) -> Any:
+        self.saved_value = value
+        return type("SaveResult", (), {"sha256": "after-save", "backup_path": None, "sync_message": ""})()
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Edit workflow configuration")
     parser.add_argument("--smoke", action="store_true", help="construct controls and exit without touching files")
@@ -756,59 +749,40 @@ if __name__ == "__main__":
         app = wx.App(False)
         empty_backend = _EmptySmokeBackend()
         empty_frame = ConfigEditorFrame(empty_backend)
-        assert not empty_frame.next_button.IsEnabled()
         assert not empty_frame.save_button.IsEnabled()
         assert empty_frame.reload_button.IsEnabled()
         empty_backend.available = True
         empty_frame._on_reload(None)
-        assert empty_frame.next_button.IsEnabled()
+        assert empty_frame.save_button.IsEnabled()
         empty_frame.Destroy()
         frame = ConfigEditorFrame(_SmokeBackend())
-        assert frame.step == 0
-        assert frame.progress.GetLabel() == "Question 1 of 5"
-        assert frame.save_button.GetLabel().startswith("Save")
+        assert frame.step == 3
+        assert frame.progress.GetLabel().startswith("Ready")
+        assert frame.config_choice.GetSelection() == 0
+        assert frame.category_list.GetCount() == 2
+        assert frame._setting_list.GetCount() == 1
+        assert frame.save_button.GetLabel().startswith("Save change")
         assert frame.reload_button.GetLabel().startswith("Reload")
         assert frame.undo_button.GetLabel() == "Undo last change"
         assert not frame.undo_button.IsEnabled()
-        frame._show_step(1)
-        frame._show_step(2)
         frame._setting_search.ChangeValue("no matching setting")
         frame._on_setting_search(None)
-        assert not frame.next_button.IsEnabled()
         assert not frame._setting_list.IsEnabled()
         escape = wx.KeyEvent(wx.wxEVT_CHAR_HOOK)
         escape.SetKeyCode(wx.WXK_ESCAPE)
         escape.SetEventObject(frame._setting_search)
         frame._on_key(escape)
         assert frame._setting_search.GetValue() == ""
-        assert frame.next_button.IsEnabled()
         assert frame._setting_list.IsEnabled()
-        event = wx.KeyEvent(wx.wxEVT_CHAR_HOOK)
-        event.SetKeyCode(wx.WXK_RETURN)
-        event.SetEventObject(frame._setting_list)
-        frame._on_key(event)
-        assert frame.step == 3
         assert isinstance(frame._answer_control, wx.CheckBox)
+        assert frame.pending_label.GetLabel() == "Pending value: false"
         frame._answer_control.SetValue(True)
-        frame._on_typed_value(None)
-        frame._on_next(None)
-        assert frame.step == 4
-        frame._on_back(None)
-        assert frame.step == 3
-        assert frame._answer_control.GetValue()
-        frame._on_save(None)
-        assert frame.step == 4
-        frame._on_back(None)
-        assert frame._answer_control.GetValue()
-        children = frame.answer_panel.GetChildren()
-        assert len(children) == 1
-        assert children[0].GetName() == frame._answer_control.GetName()
-        frame._show_step(4)
-        assert frame.progress.GetLabel() == "Question 5 of 5"
-        assert frame.next_button.GetLabel() == "Save this change"
+        frame._on_value(None)
+        assert frame.pending_label.GetLabel() == "Pending value: true"
         frame.dirty = False
         frame._on_reload(None)
-        assert frame.step == 0
+        assert frame.step == 3
+        assert frame.config_choice.GetSelection() == 0
         frame.files.append(_FallbackConfigFile("Second configuration", "<memory-2>", "smoke", "none"))
         frame._last_backup = "previous-file-backup"
         frame.undo_button.Enable(True)
@@ -816,6 +790,15 @@ if __name__ == "__main__":
         assert frame._last_backup is None
         assert not frame.undo_button.IsEnabled()
         frame.Destroy()
+        save_backend = _SaveSmokeBackend()
+        save_frame = ConfigEditorFrame(save_backend)
+        save_frame._answer_control.SetValue(True)
+        save_frame._on_value(None)
+        save_frame._on_save(None)
+        assert save_backend.saved_value == "true"
+        assert save_frame.status.GetLabel().startswith("Saved.")
+        assert save_frame.another_button.IsEnabled()
+        save_frame.Destroy()
         app.Destroy()
         raise SystemExit(0)
     raise SystemExit(main())
