@@ -8,6 +8,8 @@ The window keeps a simple list-detail editor visible: choose a configuration, ch
 
 For NVDA, use `Tab` or `F6` to move between the configuration, category, settings, and editor panes. Use arrow keys in lists, `Enter` to select a setting, and `Escape` to clear a search with no matches. `Ctrl+S` saves the pending value. Press `F1` or activate `Help (F1)` whenever you get stuck; focus returns to the Help button when the instructions close.
 
+The repeatable spoken-output check is in [`docs/ACCESSIBILITY-CHECKLIST.md`](docs/ACCESSIBILITY-CHECKLIST.md).
+
 Build or refresh the executable:
 
 ```powershell
