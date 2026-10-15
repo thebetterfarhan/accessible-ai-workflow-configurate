@@ -154,12 +154,19 @@ class ConfigEditorFrame(wx.Frame if wx else object):
 
     def _on_key(self, event: Any) -> None:
         key = event.GetKeyCode()
+        source = event.GetEventObject()
         if event.ControlDown() and key in (ord("S"), ord("s")):
             self._on_save(event)
         elif key == wx.WXK_F1:
             self._on_help(event)
+        elif key == wx.WXK_ESCAPE and self.step == 2 and source is getattr(self, "_setting_search", None):
+            if self._setting_search.GetValue():
+                self._setting_search.ChangeValue("")
+                self._on_setting_search(None)
+                self._set_status("Search cleared. Choose a setting, then press Enter.")
+            else:
+                event.Skip()
         elif key in (wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER):
-            source = event.GetEventObject()
             setting_step_control = self.step == 2 and (
                 source is getattr(self, "_setting_search", None)
                 or source is getattr(self, "_setting_list", None)
@@ -699,7 +706,8 @@ class ConfigEditorFrame(wx.Frame if wx else object):
             "This wizard asks one question at a time. Choose a configuration, "
             "an area, a setting, and its new value. Then review the change before saving.\n\n"
             "Keyboard: Tab moves forward. Shift+Tab moves back. Arrow keys choose a radio "
-            "button. Enter activates the focused choice. F1 opens this help. F5 reloads. "
+            "button. Enter activates the focused choice. Escape clears a setting search. "
+            "F1 opens this help. F5 reloads. "
             "Control plus S opens the review or saves after review.\n\n"
             "Saving creates a backup. After saving, choose Make another change to continue, "
             "or Undo last change to restore the previous value."
@@ -766,8 +774,13 @@ if __name__ == "__main__":
         frame._on_setting_search(None)
         assert not frame.next_button.IsEnabled()
         assert not frame._setting_list.IsEnabled()
-        frame._setting_search.ChangeValue("")
-        frame._on_setting_search(None)
+        escape = wx.KeyEvent(wx.wxEVT_CHAR_HOOK)
+        escape.SetKeyCode(wx.WXK_ESCAPE)
+        escape.SetEventObject(frame._setting_search)
+        frame._on_key(escape)
+        assert frame._setting_search.GetValue() == ""
+        assert frame.next_button.IsEnabled()
+        assert frame._setting_list.IsEnabled()
         event = wx.KeyEvent(wx.wxEVT_CHAR_HOOK)
         event.SetKeyCode(wx.WXK_RETURN)
         event.SetEventObject(frame._setting_list)
