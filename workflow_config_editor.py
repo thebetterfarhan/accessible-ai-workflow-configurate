@@ -310,7 +310,6 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         self._answer_control = control
         self.answer_sizer.Add(control, 0, wx.EXPAND | wx.ALL, 4)
         self.answer_panel.Layout()
-        control.SetFocus()
 
     def _set_category(self, index: int) -> None:
         self.category = self.categories[index]
