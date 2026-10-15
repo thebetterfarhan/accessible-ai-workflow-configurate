@@ -225,13 +225,18 @@ class ConfigEditorFrame(wx.Frame if wx else object):
             search.SetHint("Type part of a setting name")
             control = wx.ListBox(container, style=wx.LB_SINGLE)
             control.SetName("Workflow setting")
+            empty_message = wx.StaticText(container, label="")
+            empty_message.SetName("Setting search result")
+            empty_message.Wrap(880)
             container_sizer.Add(search_label, 0, wx.EXPAND | wx.BOTTOM, 3)
             container_sizer.Add(search, 0, wx.EXPAND | wx.BOTTOM, 6)
             container_sizer.Add(control, 1, wx.EXPAND)
+            container_sizer.Add(empty_message, 0, wx.EXPAND | wx.TOP, 8)
             container.SetSizer(container_sizer)
             self._visible_settings = self._filtered()
             self._setting_search = search
             self._setting_list = control
+            self._setting_empty_message = empty_message
             self._populate_setting_choices()
             search.Bind(wx.EVT_TEXT, self._on_setting_search)
             control.Bind(wx.EVT_LISTBOX, lambda e: self._choose_setting(e.GetSelection()))
@@ -308,11 +313,37 @@ class ConfigEditorFrame(wx.Frame if wx else object):
             self._setting_list.SetSelection(0)
         else:
             self.setting = None
+        self._update_setting_step_state()
+
+    def _update_setting_step_state(self) -> None:
+        """Keep progression and the spoken empty state aligned with search results."""
+        if self.step != 2 or not hasattr(self, "_setting_list"):
+            return
+        count = len(self._visible_settings)
+        has_results = count > 0
+        self.next_button.Enable(has_results)
+        empty_message = getattr(self, "_setting_empty_message", None)
+        if empty_message is not None:
+            if has_results:
+                empty_message.SetLabel("")
+                empty_message.Hide()
+            else:
+                query = self._setting_search.GetValue().strip()
+                if query:
+                    message = f"No settings match {query}. Clear the search or press Shift+Tab to go back and choose another category."
+                else:
+                    message = "This category has no settings. Press Shift+Tab to go back and choose another category."
+                empty_message.SetLabel(message)
+                empty_message.Show()
+            self.answer_panel.Layout()
 
     def _on_setting_search(self, _event: Any) -> None:
         self._populate_setting_choices()
         count = len(self._visible_settings)
-        self._set_status(f"{count} setting{'s' if count != 1 else ''} found. Tab to choose a setting.")
+        if count:
+            self._set_status(f"{count} setting{'s' if count != 1 else ''} found. Tab to choose a setting.")
+        else:
+            self._set_status("No matching settings. Clear the search or go back to choose another category.")
 
     def _on_back(self, _event: Any) -> None:
         self._show_step(self.step - 1)
