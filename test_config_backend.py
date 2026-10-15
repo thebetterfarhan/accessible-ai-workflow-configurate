@@ -1,4 +1,4 @@
-import json, tempfile
+import json, tempfile, os
 from pathlib import Path
 import config_backend as b
 
@@ -64,3 +64,15 @@ def test_restore_backup_rejects_wrong_file_and_stale_hash(tmp_path):
         assert False
     except RuntimeError:
         pass
+
+def test_list_backups_returns_only_matching_files_newest_first(tmp_path):
+    target = tmp_path / 'x.json'
+    target.write_text('{}\n', encoding='utf8')
+    older = tmp_path / 'x.json.20260101T010101000000Z.bak'
+    newer = tmp_path / 'x.json.20260102T010101000000Z.bak'
+    unrelated = tmp_path / 'other.json.20260103T010101000000Z.bak'
+    for path in (older, newer, unrelated):
+        path.write_text('{}\n', encoding='utf8')
+    os.utime(older, (1, 1))
+    os.utime(newer, (2, 2))
+    assert b.list_backups(b.ConfigFile('x', target, 'json')) == [newer, older]

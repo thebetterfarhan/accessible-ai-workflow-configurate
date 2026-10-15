@@ -117,6 +117,15 @@ def _backup(p):
     for old in backups[5:]: old.unlink()
     return b
 
+def list_backups(file: ConfigFile) -> list[Path]:
+    """Return valid backups for one file, newest first."""
+    pattern = re.compile(re.escape(file.path.name) + r"\.\d{8}T\d{6}(?:\d{6})?Z\.bak$")
+    return sorted(
+        (path for path in file.path.parent.glob(file.path.name + ".*.bak") if pattern.fullmatch(path.name)),
+        key=lambda path: path.stat().st_mtime,
+        reverse=True,
+    )
+
 def save_setting(file: ConfigFile, setting: Setting, new_value: str, expected_sha256: str) -> SaveResult:
     raw=_read(file.path)
     if _sha(raw)!=expected_sha256: raise RuntimeError("external change detected; reload before saving")
