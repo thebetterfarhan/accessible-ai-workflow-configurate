@@ -32,6 +32,8 @@ The repeatable spoken-output check is in [`docs/ACCESSIBILITY-CHECKLIST.md`](doc
 
 The reproducible local release gate is in [`docs/RELEASE-CHECKLIST.md`](docs/RELEASE-CHECKLIST.md). It records automated checks, the NVDA gate, and the boundary between local release evidence and publishing.
 
+Current local release notes are in [`docs/RELEASE-NOTES.md`](docs/RELEASE-NOTES.md).
+
 Build or refresh the executable:
 
 ```powershell
