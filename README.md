@@ -16,6 +16,8 @@ For a first change, activate `Start guided change` or press `Ctrl+G`. The wizard
 
 `Change summary` lists the current and saved guided changes. `Reset category` restores the loaded value for the current pending answer without writing to disk.
 
+`Presets` previews Beginner, Balanced, or Advanced values when matching settings exist; saving still requires review. `Recent changes` lists saved edits from this session. `Health check` reports loaded-file and editable-setting status without repairing anything automatically.
+
 For NVDA, use `Tab` or `F6` to move between the configuration, category, settings, and editor panes. Use `Ctrl+F` to jump to and select the settings search, `Ctrl+G` to start guided mode, arrow keys in lists, `Enter` to select a setting, and `Escape` to clear a search with no matches. `Ctrl+R` reviews the pending change; `Ctrl+B` opens backup history; `Ctrl+S` saves it. Press `F1` or activate `Help (F1)` whenever you get stuck; focus returns to the control you were using when the instructions close.
 
 The repeatable spoken-output check is in [`docs/ACCESSIBILITY-CHECKLIST.md`](docs/ACCESSIBILITY-CHECKLIST.md).

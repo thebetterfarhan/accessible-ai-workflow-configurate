@@ -11,6 +11,7 @@ import importlib
 import argparse
 import json
 import re
+from datetime import datetime
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Iterable, Optional
@@ -174,6 +175,9 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         self.review_button = wx.Button(panel, label="Review change")
         self.review_button.Enable(False)
         self.summary_button = wx.Button(panel, label="Change summary")
+        self.presets_button = wx.Button(panel, label="Presets")
+        self.recent_button = wx.Button(panel, label="Recent changes")
+        self.health_button = wx.Button(panel, label="Health check")
         self.save_button = wx.Button(panel, label="Save change (Ctrl+S)")
         self.another_button = wx.Button(panel, label="Make another change")
         self.another_button.Enable(False)
@@ -184,6 +188,9 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         self.reload_button = wx.Button(panel, label="Reload (F5)")
         buttons.Add(self.review_button, 0, wx.RIGHT, 6)
         buttons.Add(self.summary_button, 0, wx.RIGHT, 6)
+        buttons.Add(self.presets_button, 0, wx.RIGHT, 6)
+        buttons.Add(self.recent_button, 0, wx.RIGHT, 6)
+        buttons.Add(self.health_button, 0, wx.RIGHT, 6)
         buttons.Add(self.save_button, 0, wx.RIGHT, 6)
         buttons.Add(self.another_button, 0, wx.RIGHT, 6)
         buttons.Add(self.undo_button, 0, wx.RIGHT, 6)
@@ -208,6 +215,9 @@ class ConfigEditorFrame(wx.Frame if wx else object):
 
         self.review_button.Bind(wx.EVT_BUTTON, self._on_review)
         self.summary_button.Bind(wx.EVT_BUTTON, self._show_change_summary)
+        self.presets_button.Bind(wx.EVT_BUTTON, self._on_presets)
+        self.recent_button.Bind(wx.EVT_BUTTON, self._show_recent_changes)
+        self.health_button.Bind(wx.EVT_BUTTON, self._show_health)
         self.save_button.Bind(wx.EVT_BUTTON, self._on_save)
         self.another_button.Bind(wx.EVT_BUTTON, self._on_another_change)
         self.undo_button.Bind(wx.EVT_BUTTON, self._on_undo)
@@ -232,6 +242,8 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         self._guided_completed: set[str] = set()
         self._guided_resume: Optional[dict[str, Any]] = None
         self._guided_changes: list[dict[str, str]] = []
+        self._preset_pending: list[tuple[Any, str]] = []
+        self._recent_changes: list[dict[str, str]] = []
         self._guided_phase: Optional[str] = None
         self._guided_categories: list[str] = []
         self._guided_category_pos = 0
@@ -345,6 +357,84 @@ class ConfigEditorFrame(wx.Frame if wx else object):
 
     def _show_change_summary(self, _event: Any) -> None:
         dialog = wx.MessageDialog(self, self._change_summary_text(), "Guided change summary", wx.OK | wx.ICON_INFORMATION)
+        try:
+            dialog.ShowModal()
+        finally:
+            dialog.Destroy()
+        self._restore_help_focus()
+
+    def _preset_choices(self) -> list[str]:
+        return ["Beginner", "Balanced", "Advanced"]
+
+    def _preset_changes(self, name: str) -> list[tuple[Any, str]]:
+        values = {
+            "Beginner": {"sandbox": "read-only", "approval": "on-request", "reasoning": "low"},
+            "Balanced": {"sandbox": "workspace-write", "approval": "on-request", "reasoning": "medium"},
+            "Advanced": {"sandbox": "danger-full-access", "approval": "never", "reasoning": "high"},
+        }.get(name, {})
+        changes: list[tuple[Any, str]] = []
+        for setting in self.settings:
+            text = " ".join(map(str, [getattr(setting, "label", ""), getattr(setting, "path", "")])).lower()
+            for key, value in values.items():
+                if key in text:
+                    changes.append((setting, value))
+                    break
+        return changes
+
+    def _on_presets(self, _event: Any) -> None:
+        if self.file is None:
+            self._set_status("Load a configuration before choosing a preset.")
+            return
+        dialog = wx.SingleChoiceDialog(self, "Choose a safe preset to preview.", "Presets", self._preset_choices())
+        try:
+            if dialog.ShowModal() != wx.ID_OK:
+                return
+            name = dialog.GetStringSelection()
+        finally:
+            dialog.Destroy()
+        changes = self._preset_changes(name)
+        if not changes:
+            self._set_status(f"{name} has no matching settings in this configuration.")
+            return
+        self._preset_pending = changes
+        first, proposed = changes[0]
+        self.category = self._setting_category(first)
+        self._populate_setting_choices()
+        self.setting = first
+        self._draft_value = proposed
+        self.dirty = proposed != str(getattr(first, "value", ""))
+        self._refresh_detail()
+        self._set_status(f"{name} preview loaded. Review the {len(changes)} proposed changes before saving.")
+        self._answer_control.SetFocus()
+
+    def _show_recent_changes(self, _event: Any) -> None:
+        if not self._recent_changes:
+            self._set_status("No changes have been saved in this session.")
+            return
+        text = "Recent saved changes:\n" + "\n".join(
+            f"{row['timestamp']}: {row['setting']} — {row['old']} to {row['new']}"
+            for row in reversed(self._recent_changes[-10:])
+        )
+        dialog = wx.MessageDialog(self, text, "Recent changes", wx.OK | wx.ICON_INFORMATION)
+        try:
+            dialog.ShowModal()
+        finally:
+            dialog.Destroy()
+        self._restore_help_focus()
+
+    def _health_report(self) -> list[tuple[str, str]]:
+        if self.file is None:
+            return [("error", "No configuration is loaded.")]
+        report = [("ok", f"Loaded {self._file_name(self.file)}."), ("ok", f"Found {len(self.settings)} editable settings.")]
+        if not self.settings:
+            report.append(("warning", "No editable settings were found."))
+        if any(str(getattr(setting, "path", "")).startswith("TASTE:") for setting in self.settings):
+            report.append(("warning", "Generated TASTE sections are protected."))
+        return report
+
+    def _show_health(self, _event: Any) -> None:
+        lines = [f"{severity}: {message}" for severity, message in self._health_report()]
+        dialog = wx.MessageDialog(self, "Configuration health\n\n" + "\n".join(lines), "Health check", wx.OK | wx.ICON_INFORMATION)
         try:
             dialog.ShowModal()
         finally:
@@ -677,6 +767,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
             self.settings, self.file_hash = self.backend.load_settings(item)
             self.file, self.setting, self.dirty = item, None, False
             self._draft_value = None
+            self._preset_pending = []
             if file_changed:
                 self._last_backup = None
                 self.undo_button.Enable(False)
@@ -988,12 +1079,19 @@ class ConfigEditorFrame(wx.Frame if wx else object):
     def _review_text(self) -> str:
         if self.file is None or self.setting is None or not self._controls:
             return "Select a setting and enter a value before reviewing."
+        preset_text = ""
+        if self._preset_pending:
+            preset_text = "\nPreset preview (save applies the selected setting):\n" + "\n".join(
+                f"{self._setting_name(setting)}: {getattr(setting, 'value', '')} to {value}"
+                for setting, value in self._preset_pending
+            ) + "\n"
         return (
             f"Configuration: {self._file_name(self.file)}\n"
             f"Setting: {self._setting_name(self.setting)}\n"
             f"Current value: {getattr(self.setting, 'value', '')}\n"
             f"Pending value: {self._typed_value()}\n\n"
             f"{self._change_summary_text()}\n\n"
+            f"{preset_text}"
             "Choose Yes to save this change, or No to keep editing."
         )
 
@@ -1036,13 +1134,13 @@ class ConfigEditorFrame(wx.Frame if wx else object):
                 "setting": self._setting_name(self.setting),
                 "old": str(getattr(self.setting, "value", "")),
                 "new": str(proposed),
+                "timestamp": datetime.now().isoformat(timespec="seconds"),
             }
             result = self.backend.save_setting(self.file, self.setting, proposed, self.file_hash)
             self.file_hash = getattr(result, "sha256", None) or self._hash_after_save(result)
             continue_guided = self._guided and self._guided_phase == "review" and self._guided_category_pos + 1 < len(self._guided_categories)
             if self._guided and self._guided_phase == "review":
                 self._guided_completed.add(self._guided_categories[self._guided_category_pos])
-            self._guided_changes.append(change_record)
             self.dirty = False
             self._draft_value = None
             if continue_guided:
@@ -1059,6 +1157,9 @@ class ConfigEditorFrame(wx.Frame if wx else object):
             self.Layout()
             backup = getattr(result, "backup_path", None)
             self._last_backup = backup
+            change_record["backup"] = str(backup or "")
+            self._guided_changes.append(change_record)
+            self._recent_changes.append(change_record)
             self._load_file(self.files.index(self.file))
             self._refresh_lists()
             if continue_guided:
@@ -1336,6 +1437,10 @@ if __name__ == "__main__":
         assert frame.guided_back_button.GetLabel() == "Back"
         assert frame.guided_skip_button.GetLabel() == "Skip category"
         assert frame.reset_category_button.GetLabel() == "Reset category"
+        assert frame.presets_button.GetLabel() == "Presets"
+        assert frame._preset_choices() == ["Beginner", "Balanced", "Advanced"]
+        assert frame.recent_button.GetLabel() == "Recent changes"
+        assert frame.health_button.GetLabel() == "Health check"
         assert "Guided changes" in frame._change_summary_text()
         assert frame.welcome_button.GetLabel() == "Welcome"
         assert frame.guidance_button.GetLabel() == "Guidance: Detailed"

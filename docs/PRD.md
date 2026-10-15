@@ -43,6 +43,8 @@ Guided Next validates the current answer before advancing and provides a type-sp
 
 The change summary shows old and new values, while category reset discards only the current pending answer after confirmation.
 
+Safe presets are preview-only until the existing review/save action is confirmed. Recent changes and health checks are read-only views.
+
 ## Accessibility requirements
 
 - Keyboard-only operation.
