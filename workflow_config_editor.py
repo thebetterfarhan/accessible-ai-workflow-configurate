@@ -742,6 +742,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
 
     def _on_help(self, _event: Any) -> None:
         """Show short, screen-reader-friendly instructions for the persistent editor."""
+        self._help_return_focus = wx.Window.FindFocus()
         message = (
             "Workflow configuration help\n\n"
             "Choose a configuration, category, and setting. The editor stays visible while "
@@ -758,7 +759,13 @@ class ConfigEditorFrame(wx.Frame if wx else object):
             dialog.ShowModal()
         finally:
             dialog.Destroy()
-        if self.help_button and self.help_button.IsEnabled():
+        self._restore_help_focus()
+
+    def _restore_help_focus(self) -> None:
+        target = getattr(self, "_help_return_focus", None)
+        if target is not None and target.IsShown() and target.IsEnabled():
+            target.SetFocus()
+        elif self.help_button and self.help_button.IsEnabled():
             self.help_button.SetFocus()
 
     def _on_close(self, event: Any) -> None:
@@ -839,6 +846,10 @@ if __name__ == "__main__":
         assert frame.category_list.GetCount() == 2
         assert frame._setting_list.GetCount() == 1
         assert frame.answer_panel.GetName() == "Value editor"
+        frame._setting_search.SetFocus()
+        frame._help_return_focus = frame._setting_search
+        frame._restore_help_focus()
+        assert wx.Window.FindFocus() is frame._setting_search
         frame._choose_setting(0)
         assert frame.status.GetLabel().startswith("Example setting selected")
         review = frame._review_text()
