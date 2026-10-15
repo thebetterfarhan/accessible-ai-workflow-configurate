@@ -34,6 +34,41 @@ The reproducible local release gate is in [`docs/RELEASE-CHECKLIST.md`](docs/REL
 
 Current local release notes are in [`docs/RELEASE-NOTES.md`](docs/RELEASE-NOTES.md).
 
+Change history is in [`CHANGELOG.md`](CHANGELOG.md).
+
+## System requirements
+
+- Windows 10 or Windows 11, 64-bit.
+- No administrator access is required. The app is portable.
+- NVDA is recommended for the spoken accessibility check.
+- The app edits local Codex, OpenCode, and CommandCode workflow files. It does not need an internet connection to edit them.
+
+## Install
+
+1. Extract the local ZIP to a folder you control.
+2. Open `AccessibleAIWorkflowConfigurate.exe`.
+3. Use `Start guided change` for the first setup, or choose a source and category directly.
+
+Do not run the EXE from inside the ZIP. Keep the EXE and its companion files together.
+
+## Uninstall
+
+Close the app, then delete the extracted application folder. The app does not install a service or scheduled task. It does not delete your workflow configuration files, backups, or changes; remove those separately only when you intend to.
+
+## Privacy and support
+
+The editor reads and writes local workflow files for the current Windows user. It does not upload configuration contents. The bundled Node runtime is used locally for JSONC parsing. Save and sync actions may invoke local scripts configured by the user.
+
+When reporting a problem, include the app version or commit, Windows version, NVDA version if relevant, exact steps, the spoken or visible error, and the EXE or ZIP hash. Remove passwords, tokens, private paths, and workflow contents before sharing logs.
+
+## Known limitations
+
+- The app edits supported workflow settings only. Credentials, runtime state, history, and cache files are excluded.
+- Unsupported or malformed sources are reported as unavailable and are not repaired automatically.
+- The portable EXE is unsigned and has no automatic update service.
+- Spoken labels and focus recovery still require a real NVDA check; automated tests cannot prove speech output.
+- No open-source license has been selected for this local release candidate. Do not redistribute it publicly until licensing and publication decisions are complete.
+
 Build or refresh the executable:
 
 ```powershell
