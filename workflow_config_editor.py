@@ -92,7 +92,8 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         self.guided_button.SetName("Start guided change")
         outer.Add(self.guided_button, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
         self.progress = wx.StaticText(panel, label="Ready")
-        self.progress.SetName("Editor status")
+        self.progress.SetName("Guided progress")
+        self.progress.Hide()
         outer.Add(self.progress, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
         panes = wx.BoxSizer(wx.HORIZONTAL)
         left = wx.Panel(panel)
@@ -203,6 +204,8 @@ class ConfigEditorFrame(wx.Frame if wx else object):
 
     def _start_guided(self, _event: Any) -> None:
         self._guided = True
+        self.progress.Show()
+        self.Layout()
         self._set_guided_step("Question 1 of 4: Choose a configuration.")
         self.config_choice.SetFocus()
 
@@ -358,6 +361,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         self.save_button.Enable(False)
         self.review_button.Enable(False)
         self.guided_button.Enable(False)
+        self.progress.Hide()
         self.another_button.Enable(False)
         self.undo_button.Enable(False)
         self.backups_button.Enable(False)
@@ -723,7 +727,8 @@ class ConfigEditorFrame(wx.Frame if wx else object):
             self.dirty = False
             self._draft_value = None
             self._guided = False
-            self.progress.SetLabel("Completed. Ready for another change.")
+            self.progress.Hide()
+            self.Layout()
             backup = getattr(result, "backup_path", None)
             self._last_backup = backup
             self._load_file(self.files.index(self.file))
@@ -944,7 +949,7 @@ if __name__ == "__main__":
         frame.Show()
         wx.Yield()
         assert frame.step == 3
-        assert frame.progress.GetLabel().startswith("Ready")
+        assert not frame.progress.IsShown()
         assert frame.guided_button.GetLabel() == "Start guided change"
         assert frame.status.GetLabel().startswith("Choose a configuration")
         assert frame.config_choice.GetSelection() == 0
@@ -956,6 +961,7 @@ if __name__ == "__main__":
         assert frame.answer_panel.GetName() == "Value editor"
         frame._start_guided(None)
         assert frame.progress.GetLabel().startswith("Question 1 of 4")
+        assert frame.progress.IsShown()
         guided_called = []
         original_guided = frame._start_guided
         frame._start_guided = lambda _event: guided_called.append(True)
