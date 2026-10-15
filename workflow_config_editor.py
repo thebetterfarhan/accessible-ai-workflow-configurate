@@ -390,6 +390,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
 
     def _on_setting_search(self, _event: Any) -> None:
         self._populate_setting_choices()
+        self._refresh_detail()
         count = len(self._visible_settings)
         if count:
             self._set_status(f"{count} setting{'s' if count != 1 else ''} found. Tab to choose a setting.")
@@ -784,6 +785,7 @@ if __name__ == "__main__":
         frame._setting_search.ChangeValue("no matching setting")
         frame._on_setting_search(None)
         assert not frame._setting_list.IsEnabled()
+        assert frame.question.GetLabel() == "Select a setting"
         escape = wx.KeyEvent(wx.wxEVT_CHAR_HOOK)
         escape.SetKeyCode(wx.WXK_ESCAPE)
         escape.SetEventObject(frame._setting_search)
