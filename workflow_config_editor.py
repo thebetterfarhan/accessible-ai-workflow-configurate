@@ -88,6 +88,9 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         self.help_button.SetName("Help")
         self.help_button.SetToolTip("Read keyboard and editor instructions")
         outer.Add(self.help_button, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
+        self.guided_button = wx.Button(panel, label="Start guided change")
+        self.guided_button.SetName("Start guided change")
+        outer.Add(self.guided_button, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
         self.progress = wx.StaticText(panel, label="Ready")
         self.progress.SetName("Editor status")
         outer.Add(self.progress, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
@@ -186,19 +189,32 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         self.backups_button.Bind(wx.EVT_BUTTON, self._on_backups)
         self.reload_button.Bind(wx.EVT_BUTTON, self._on_reload)
         self.help_button.Bind(wx.EVT_BUTTON, self._on_help)
+        self.guided_button.Bind(wx.EVT_BUTTON, self._start_guided)
         self.Bind(wx.EVT_CLOSE, self._on_close)
         self.step = 3
         self._answer_control = None
         self._radio_values: list[str] = []
         self._draft_value: Optional[str] = None
+        self._guided = False
 
     def _bind_keys(self) -> None:
         self.Bind(wx.EVT_CHAR_HOOK, self._on_key)
+
+    def _start_guided(self, _event: Any) -> None:
+        self._guided = True
+        self._set_guided_step("Question 1 of 4: Choose a configuration.")
+        self.config_choice.SetFocus()
+
+    def _set_guided_step(self, text: str) -> None:
+        self.progress.SetLabel(text)
+        self._set_status(text)
 
     def _on_config_choice(self, event: Any) -> None:
         if self._confirm_discard():
             self._load_file(event.GetSelection())
             self._refresh_lists()
+            if self._guided:
+                self._set_guided_step("Question 2 of 4: Choose a category.")
         elif self.file in self.files:
             self.config_choice.SetSelection(self.files.index(self.file))
 
@@ -215,6 +231,8 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         self._populate_setting_choices()
         self._refresh_detail()
         self._set_status(f"{self.category_labels[event.GetSelection()]}. Choose a setting.")
+        if self._guided:
+            self._set_guided_step("Question 3 of 4: Choose a setting.")
 
     def _refresh_lists(self) -> None:
         self.config_choice.Set([self._file_name(item) for item in self.files])
@@ -380,6 +398,8 @@ class ConfigEditorFrame(wx.Frame if wx else object):
                 self._draft_value = None
             self.setting = selected
             self._set_status(f"{self._setting_name(selected)} selected. Press Enter to edit.")
+            if self._guided:
+                self._set_guided_step("Question 4 of 4: Choose or enter the value.")
 
     def _populate_setting_choices(self) -> None:
         """Apply the question-3 search without losing the selected setting."""
@@ -682,6 +702,8 @@ class ConfigEditorFrame(wx.Frame if wx else object):
             self.file_hash = getattr(result, "sha256", None) or self._hash_after_save(result)
             self.dirty = False
             self._draft_value = None
+            self._guided = False
+            self.progress.SetLabel("Completed. Ready for another change.")
             backup = getattr(result, "backup_path", None)
             self._last_backup = backup
             self._load_file(self.files.index(self.file))
@@ -901,11 +923,14 @@ if __name__ == "__main__":
         wx.Yield()
         assert frame.step == 3
         assert frame.progress.GetLabel().startswith("Ready")
+        assert frame.guided_button.GetLabel() == "Start guided change"
         assert frame.status.GetLabel().startswith("Choose a configuration")
         assert frame.config_choice.GetSelection() == 0
         assert frame.category_list.GetCount() == 2
         assert frame._setting_list.GetCount() == 1
         assert frame.answer_panel.GetName() == "Value editor"
+        frame._start_guided(None)
+        assert frame.progress.GetLabel().startswith("Question 1 of 4")
         assert frame.backups_button.GetLabel() == "Backups"
         assert "Current value: false" in frame._answer_control.GetName()
         assert "Type: boolean" in frame._answer_control.GetName()
@@ -915,7 +940,7 @@ if __name__ == "__main__":
         frame._restore_help_focus()
         assert wx.Window.FindFocus() is frame._setting_search
         frame._choose_setting(0)
-        assert frame.status.GetLabel().startswith("Example setting selected")
+        assert frame.progress.GetLabel().startswith("Question 4 of 4")
         review = frame._review_text()
         assert "Current value: false" in review
         assert "Pending value: false" in review

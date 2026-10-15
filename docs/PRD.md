@@ -33,6 +33,8 @@ Codex, OpenCode, and CommandCode keep workflow behavior in different TOML, JSON,
 5. Review the current and pending values while editing.
 6. Explicitly save, undo the last save, or start another change.
 
+The guided entry point presents the same flow as four spoken questions while keeping the persistent editor visible.
+
 ## Accessibility requirements
 
 - Keyboard-only operation.
