@@ -262,16 +262,29 @@ class ConfigEditorFrame(wx.Frame if wx else object):
 
     def _focus_pane(self, reverse: bool = False) -> None:
         """Move focus among the persistent editor panes with F6."""
-        panes = [self.config_choice, self.category_list, self._setting_search, self._answer_control]
-        panes = [control for control in panes if control is not None and control.IsShown() and control.IsEnabled()]
-        if not panes:
+        pane_groups = [
+            (self.config_choice,),
+            (self.category_list,),
+            (self._setting_search, self._setting_list),
+            (self._answer_control,),
+        ]
+        pane_groups = [
+            tuple(control for control in group if control is not None and control.IsShown() and control.IsEnabled())
+            for group in pane_groups
+        ]
+        pane_groups = [group for group in pane_groups if group]
+        if not pane_groups:
             return
         focused = wx.Window.FindFocus()
         try:
-            index = next(index for index, control in enumerate(panes) if focused is control)
+            index = next(
+                index for index, group in enumerate(pane_groups)
+                if any(focused is control or control.IsDescendant(focused) for control in group)
+            )
         except StopIteration:
             index = 0 if reverse else -1
-        panes[(index - 1 if reverse else index + 1) % len(panes)].SetFocus()
+        target = pane_groups[(index - 1 if reverse else index + 1) % len(pane_groups)][0]
+        target.SetFocus()
 
     def _discover(self) -> None:
         try:
@@ -771,6 +784,8 @@ if __name__ == "__main__":
         assert empty_frame.save_button.IsEnabled()
         empty_frame.Destroy()
         frame = ConfigEditorFrame(_SmokeBackend())
+        frame.Show()
+        wx.Yield()
         assert frame.step == 3
         assert frame.progress.GetLabel().startswith("Ready")
         assert frame.status.GetLabel().startswith("Choose a configuration")
@@ -778,6 +793,9 @@ if __name__ == "__main__":
         assert frame.category_list.GetCount() == 2
         assert frame._setting_list.GetCount() == 1
         assert frame.answer_panel.GetName() == "Value editor"
+        frame.category_list.SetFocus()
+        frame._focus_pane()
+        assert wx.Window.FindFocus() is frame._setting_search
         assert frame.save_button.GetLabel().startswith("Save change")
         assert frame.reload_button.GetLabel().startswith("Reload")
         assert frame.undo_button.GetLabel() == "Undo last change"
