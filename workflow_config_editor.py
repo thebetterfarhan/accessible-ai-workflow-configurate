@@ -327,6 +327,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         count = len(self._visible_settings)
         has_results = count > 0
         self.next_button.Enable(has_results)
+        self._setting_list.Enable(has_results)
         empty_message = getattr(self, "_setting_empty_message", None)
         if empty_message is not None:
             if has_results:
@@ -335,9 +336,9 @@ class ConfigEditorFrame(wx.Frame if wx else object):
             else:
                 query = self._setting_search.GetValue().strip()
                 if query:
-                    message = f"No settings match {query}. Clear the search or press Shift+Tab to go back and choose another category."
+                    message = f"No settings match {query}. Clear the search or Tab to Back, then press Enter to choose another category."
                 else:
-                    message = "This category has no settings. Press Shift+Tab to go back and choose another category."
+                    message = "This category has no settings. Tab to Back, then press Enter to choose another category."
                 empty_message.SetLabel(message)
                 empty_message.Show()
             self.answer_panel.Layout()
@@ -746,6 +747,12 @@ if __name__ == "__main__":
         assert not frame.undo_button.IsEnabled()
         frame._show_step(1)
         frame._show_step(2)
+        frame._setting_search.ChangeValue("no matching setting")
+        frame._on_setting_search(None)
+        assert not frame.next_button.IsEnabled()
+        assert not frame._setting_list.IsEnabled()
+        frame._setting_search.ChangeValue("")
+        frame._on_setting_search(None)
         event = wx.KeyEvent(wx.wxEVT_CHAR_HOOK)
         event.SetKeyCode(wx.WXK_RETURN)
         event.SetEventObject(frame._setting_list)
