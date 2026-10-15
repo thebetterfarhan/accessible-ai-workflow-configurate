@@ -201,6 +201,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         self.setting = None
         self._populate_setting_choices()
         self._refresh_detail()
+        self._set_status(f"{self.category_labels[event.GetSelection()]}. Choose a setting.")
 
     def _refresh_lists(self) -> None:
         self.config_choice.Set([self._file_name(item) for item in self.files])
@@ -363,6 +364,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
             if selected is not self.setting:
                 self._draft_value = None
             self.setting = selected
+            self._set_status(f"{self._setting_name(selected)} selected. Press Enter to edit.")
 
     def _populate_setting_choices(self) -> None:
         """Apply the question-3 search without losing the selected setting."""
@@ -795,6 +797,8 @@ if __name__ == "__main__":
         assert frame.category_list.GetCount() == 2
         assert frame._setting_list.GetCount() == 1
         assert frame.answer_panel.GetName() == "Value editor"
+        frame._choose_setting(0)
+        assert frame.status.GetLabel().startswith("Example setting selected")
         frame.category_list.SetFocus()
         frame._focus_pane()
         assert wx.Window.FindFocus() is frame._setting_search
