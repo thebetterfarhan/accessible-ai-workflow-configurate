@@ -161,6 +161,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         outer.Add(panes, 1, wx.ALL | wx.EXPAND, 8)
         buttons = wx.BoxSizer(wx.HORIZONTAL)
         self.review_button = wx.Button(panel, label="Review change")
+        self.review_button.Enable(False)
         self.save_button = wx.Button(panel, label="Save change (Ctrl+S)")
         self.another_button = wx.Button(panel, label="Make another change")
         self.another_button.Enable(False)
@@ -246,6 +247,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
 
     def _refresh_detail(self) -> None:
         if self.setting is None:
+            self.review_button.Enable(False)
             self.question.SetLabel("Select a setting")
             self.setting_label.SetLabel("")
             self.type_cue.SetLabel("")
@@ -253,6 +255,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
             self._replace_answer(wx.StaticText(self.answer_panel, label="Choose a setting from the list."))
             self._answer_control = None
             return
+        self.review_button.Enable(True)
         name = self._setting_name(self.setting)
         self.question.SetLabel(f"Edit {name}")
         self.setting_label.SetLabel(f"Current value: {getattr(self.setting, 'value', '')}")
@@ -351,6 +354,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         """Keep an empty discovery state actionable through Reload only."""
         self.question.SetLabel(message)
         self.save_button.Enable(False)
+        self.review_button.Enable(False)
         self.guided_button.Enable(False)
         self.another_button.Enable(False)
         self.undo_button.Enable(False)
@@ -1022,6 +1026,7 @@ if __name__ == "__main__":
         frame._setting_search.ChangeValue("no matching setting")
         frame._on_setting_search(None)
         assert not frame._setting_list.IsEnabled()
+        assert not frame.review_button.IsEnabled()
         assert frame.question.GetLabel() == "Select a setting"
         escape = wx.KeyEvent(wx.wxEVT_CHAR_HOOK)
         escape.SetKeyCode(wx.WXK_ESCAPE)
@@ -1029,6 +1034,7 @@ if __name__ == "__main__":
         frame._on_key(escape)
         assert frame._setting_search.GetValue() == ""
         assert frame._setting_list.IsEnabled()
+        assert frame.review_button.IsEnabled()
         assert isinstance(frame._answer_control, wx.CheckBox)
         assert frame.pending_label.GetLabel() == "Pending value: false"
         frame._answer_control.SetValue(True)
