@@ -8,7 +8,7 @@ Use the packaged `dist\WorkflowConfigEditor.exe` with NVDA running. Do not save 
 4. Press `F6` to move through the configuration, category, settings, and value-editor panes. Focus must not disappear or jump to a different pane.
 5. In the settings search, type a short name. The result count should update. Press `Escape` after a no-match search; the full list should return.
 6. Focus a setting and press `Enter`. NVDA should announce the setting name, current value, type, pending value, and the editable control.
-7. Change the control, but do not save. NVDA should report the pending value and `Save change (Ctrl+S)` should be reachable with Tab.
+7. Change the control, but do not save. NVDA should report the pending value. `Review change` should be reachable before `Save change (Ctrl+S)` with Tab.
 8. Press `F5` and confirm the reload prompt. The original value should return. Close the editor without saving.
 
 Record any failure with the key pressed, the last spoken label, and whether focus stayed in the expected pane. Automated smoke tests and accessibility trees do not replace this spoken-output check.
