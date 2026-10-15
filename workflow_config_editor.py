@@ -439,6 +439,12 @@ class ConfigEditorFrame(wx.Frame if wx else object):
         if self.file is None:
             return [("error", "No configuration is loaded.")]
         report = [("ok", f"Loaded {self._file_name(self.file)}."), ("ok", f"Found {len(self.settings)} editable settings.")]
+        rows = self._inventory_rows()
+        total = sum(int(row["count"]) for row in rows)
+        report.append(("ok", f"Discovered {len(rows)} supported sources with {total} editable settings total."))
+        for row in rows:
+            if row.get("error"):
+                report.append(("warning", f"{row['name']} is unavailable ({row['error']})."))
         if not self.settings:
             report.append(("warning", "No editable settings were found."))
         if any(str(getattr(setting, "path", "")).startswith("TASTE:") for setting in self.settings):
@@ -1547,6 +1553,7 @@ if __name__ == "__main__":
         assert frame._preset_choices() == ["Beginner", "Balanced", "Advanced"]
         assert frame.recent_button.GetLabel() == "Recent changes"
         assert frame.health_button.GetLabel() == "Health check"
+        assert any("supported sources" in message for _severity, message in frame._health_report())
         assert frame.inventory_button.GetLabel() == "All sources"
         assert frame._inventory_rows()[0]["count"] == 1
         assert frame._inventory_choices() == ["Smoke configuration — 1 editable settings"]

@@ -45,6 +45,8 @@ Each guided step exposes one plain-language action cue so a new user knows what 
 
 The setting editor shows a plain-language `What this changes` cue for the selected setting in both direct and guided modes.
 
+Health check reports both the selected source and the discovered workflow totals, with unavailable sources called out as warnings.
+
 The change summary shows old and new values, while category reset discards only the current pending answer after confirmation.
 
 Safe presets are preview-only until the existing review/save action is confirmed. Recent changes and health checks are read-only views.
@@ -101,6 +103,7 @@ Credentials, auth files, runtime history, state, and caches are excluded. Backup
 - All sources lists the discovered supported sources and the total editable setting count without exposing raw values, and opens a selected source after the unsaved-change check.
 - Guided steps show a plain-language action cue and make clear that answers are not saved until the review and save actions.
 - Each selected setting exposes a named `What this changes` explanation before editing.
+- Health check reports source totals and unavailable-source warnings without modifying files.
 - A fixture save preserves comments and rejects an external hash change.
 - A fixture undo restores the exact prior bytes and keeps a recovery backup.
 - Review-before-save shows the target, current value, and pending value before writing.
