@@ -685,7 +685,7 @@ class ConfigEditorFrame(wx.Frame if wx else object):
             self._load_file(self.files.index(self.file))
             sync_text = str(getattr(result, "sync_message", "")).strip()
             self._set_status(f"Last change undone. {sync_text}".strip())
-            self.undo_button.SetFocus()
+            self.another_button.SetFocus()
         except Exception as exc:
             self._set_status(f"Could not undo last change: {exc}")
             self.undo_button.SetFocus()
