@@ -1,7 +1,7 @@
 const fs=require('fs');
 const {parse, modify, applyEdits}=require('jsonc-parser');
 const [, , op, file, pathJson, value, type]=process.argv;
-const text=fs.readFileSync(file,'utf8'); const parseErrors=[]; const doc=parse(text, parseErrors);
+const text=fs.readFileSync(file,'utf8'); const parseText=text.charCodeAt(0)===0xFEFF ? text.slice(1) : text; const parseErrors=[]; const doc=parse(parseText, parseErrors);
 if(parseErrors.length){ console.error('invalid JSONC: '+parseErrors.map(error => error.error).join(', ')); process.exit(2); }
 function flatten(x,p=[]){let out=[]; if(x&&typeof x==='object'&&!Array.isArray(x)) for(const [k,v] of Object.entries(x)) out=out.concat(flatten(v,p.concat(k))); else {let t=Array.isArray(x)?'array':x===null?'null':typeof x; out.push({path:p,label:p.join('.'),value:Array.isArray(x)?JSON.stringify(x):String(x),value_type:t});} return out;}
 if(op==='list'){process.stdout.write(JSON.stringify(flatten(doc))); process.exit();}

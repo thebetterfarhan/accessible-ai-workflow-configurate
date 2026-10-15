@@ -111,6 +111,11 @@ def test_malformed_jsonc_is_rejected(tmp_path):
     except subprocess.CalledProcessError:
         pass
 
+def test_jsonc_utf8_bom_is_supported(tmp_path):
+    p = tmp_path / 'bom.jsonc'; p.write_text('\ufeff{"enabled": true}\n', encoding='utf8')
+    settings, _ = b.load_settings(b.ConfigFile('bom', p, 'jsonc'))
+    assert settings[0].value == 'true'
+
 def test_discovery_uses_current_user_profile(monkeypatch, tmp_path):
     config = tmp_path / '.codex'; config.mkdir()
     (config / 'config.toml').write_text('enabled = true\n', encoding='utf8')
