@@ -6,15 +6,13 @@ so this module never discovers or writes configuration by itself.
 
 from __future__ import annotations
 
-import hashlib
 import importlib
 import argparse
 import json
-import re
 from datetime import datetime
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Iterable, Optional
+from typing import Any, Optional
 
 try:
     import wx
