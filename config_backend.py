@@ -1,7 +1,14 @@
 """Safe, single-setting editor for the three local agent configurations."""
 from __future__ import annotations
 
-import hashlib, json, os, re, shutil, subprocess, tempfile, sys
+import hashlib
+import json
+import os
+import re
+import shutil
+import subprocess
+import tempfile
+import sys
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -138,7 +145,6 @@ def save_setting(file: ConfigFile, setting: Setting, new_value: str, expected_sh
     if file.kind == "toml":
         doc=_parse_toml(file.path); cur=doc
         for k in setting.path[:-1]: cur=cur[k]
-        old=cur[setting.path[-1]]
         if setting.value_type=="boolean":
             normalized = new_value.strip().lower()
             if normalized not in ("true", "1", "yes", "on", "false", "0", "no", "off"):

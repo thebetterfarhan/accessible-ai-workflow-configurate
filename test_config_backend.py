@@ -1,5 +1,5 @@
-import json, tempfile, os
-from pathlib import Path
+import json
+import os
 import config_backend as b
 
 
@@ -83,7 +83,7 @@ def test_restore_oldest_retained_backup_after_pruning(tmp_path):
     f = b.ConfigFile('x', p, 'json')
     setting, digest = b.load_settings(f)
     for value in range(1, 7):
-        result = b.save_setting(f, setting[0], str(value), digest)
+        b.save_setting(f, setting[0], str(value), digest)
         digest = b._sha(p.read_bytes())
     backups = b.list_backups(f)
     assert len(backups) == 5
